@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Plataforma · Tiempo y cierres — Admira Academy</title>
+  <meta name="description" content="Registra tiempo dedicado, evidencia y puntos declarados para tareas, misiones y objetivos de los ocho estudiantes del Consejo.">
+  <meta name="theme-color" content="#080a10">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/platform.css">
+  <script src="/platform-core.js" defer></script>
+  <script src="/platform.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#registro">Saltar al registro</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/">admira<span>.</span>academy</a>
+      <nav aria-label="Navegación de plataforma"><a href="/">Academia</a><a href="/#formacion">Formación</a><a class="active" href="/plataforma/" aria-current="page">Plataforma</a></nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="platform-hero">
+      <div class="wrap hero-grid">
+        <div><p class="kicker">PLATAFORMA · CIERRE TRAZABLE</p><h1>El trabajo también ocupa <span>tiempo real.</span></h1><p>Registra cuánto se dedicó a una tarea, misión u objetivo. El cronómetro produce tiempo medido; la entrada manual queda declarada. Ninguno se convierte automáticamente en puntos.</p></div>
+        <div class="truth-card"><span>CONTRATO DE ESTA V1</span><strong>Sin tiempo, no hay cierre.</strong><ul><li>Medido ≠ auditado externamente</li><li>Manual ≠ verificado</li><li>Puntos ≠ Highscore hasta validar</li></ul></div>
+      </div>
+    </section>
+
+    <section id="registro" class="platform-section">
+      <div class="wrap platform-layout">
+        <div class="workbench">
+          <div class="section-head"><div><p class="kicker">01 · IDENTIDAD DEL TRABAJO</p><h2>Nuevo cierre</h2></div><span id="draft-state" class="state-pill">Incompleto</span></div>
+
+          <div class="student-grid" id="student-grid" role="radiogroup" aria-label="Estudiante o consejero"></div>
+
+          <form id="closure-form" novalidate>
+            <div class="form-grid">
+              <label class="field"><span>Tipo de trabajo</span><select id="work-type"><option value="tarea">Tarea</option><option value="misión">Misión</option><option value="objetivo">Objetivo</option></select></label>
+              <label class="field"><span>Contexto</span><input id="work-context" maxlength="100" value="Formación Academy"></label>
+              <label class="field wide"><span>Título</span><input id="work-title" maxlength="180" placeholder="Qué se trabajó"></label>
+              <label class="field"><span>Estado de cierre</span><select id="work-status"><option value="completado">Completado</option><option value="parcial">Parcial</option><option value="bloqueado">Bloqueado</option></select></label>
+              <label class="field"><span>Puntos, si existen</span><input id="work-points" type="number" min="0" step="1" inputmode="numeric" placeholder="Sin dato"></label>
+            </div>
+            <p class="points-note">Cualquier cifra introducida queda «pendiente de validación». Academy no escribe ni modifica Highscore.</p>
+
+            <fieldset class="time-box">
+              <legend>02 · TIEMPO DEDICADO</legend>
+              <div class="mode-switch" role="group" aria-label="Origen del tiempo"><button class="active" type="button" data-time-mode="timer" aria-pressed="true">Cronómetro</button><button type="button" data-time-mode="manual" aria-pressed="false">Duración manual</button></div>
+              <div id="timer-mode">
+                <div class="clock"><strong id="timer-display">0 s</strong><span id="timer-status">Incompleto · sin iniciar</span></div>
+                <div class="timer-actions"><button class="button primary" id="timer-start" type="button">Iniciar</button><button class="button quiet" id="timer-pause" type="button">Pausar</button><button class="button quiet" id="timer-finish" type="button">Finalizar tiempo</button></div>
+                <p class="origin-note">Origen: <b>cronómetro</b>. Se guardan inicio, pausas, final y duración en este dispositivo.</p>
+              </div>
+              <div id="manual-mode" hidden>
+                <label class="field"><span>Minutos dedicados</span><input id="manual-minutes" type="number" min="0.1" step="0.1" inputmode="decimal" placeholder="Ej. 45"></label>
+                <button class="button primary" id="manual-apply" type="button">Declarar duración</button>
+                <p class="origin-note">Origen: <b>declarado manualmente</b>. No se inventan horas de inicio ni se presenta como tiempo verificado.</p>
+              </div>
+              <div id="time-events" class="time-events" aria-live="polite">Aún no hay eventos temporales.</div>
+            </fieldset>
+
+            <label class="field evidence"><span>03 · Evidencia del cierre</span><textarea id="work-evidence" maxlength="1800" placeholder="Resultado observable, prueba o bloqueo concreto…"></textarea></label>
+            <div id="validation-message" class="validation-message" role="alert" hidden></div>
+            <button class="button primary close-button" type="submit">Cerrar y guardar localmente</button>
+          </form>
+        </div>
+
+        <aside class="sync-panel" aria-labelledby="sync-title">
+          <p class="kicker">SINCRONIZACIÓN</p><h2 id="sync-title">Cola Yokup</h2><span class="sync-status">Pendiente · sin integración de escritura</span>
+          <p>La Academia no dispone de una ruta autenticada y verificable para publicar tiempos o puntuación. Los cierres se conservan localmente y no afectan Highscore.</p>
+          <dl><div><dt>Almacenamiento</dt><dd>Este navegador</dd></div><div><dt>Tiempo</dt><dd>Medido o declarado</dd></div><div><dt>Puntuación</dt><dd>No sincronizada</dd></div></dl>
+        </aside>
+      </div>
+    </section>
+
+    <section class="history-section" aria-labelledby="history-title">
+      <div class="wrap"><div class="section-head"><div><p class="kicker">04 · TRAZABILIDAD LOCAL</p><h2 id="history-title">Historial de cierres</h2></div><span id="history-count" class="state-pill">0 cierres</span></div><div id="history-list" class="history-list" aria-live="polite"><p class="empty">Todavía no hay cierres guardados.</p></div></div>
+    </section>
+  </main>
+
+  <footer><div class="wrap"><a class="brand" href="/">admira<span>.</span>academy</a><p>Plataforma de tiempo y cierres · datos locales · sin acreditaciones automáticas</p><span class="sig">academia v1</span></div></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
