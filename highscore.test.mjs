@@ -3,14 +3,15 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import vm from "node:vm";
 
-const html=await readFile(new URL("./highlights/index.html",import.meta.url),"utf8");
-const css=await readFile(new URL("./highlights.css",import.meta.url),"utf8");
-const js=await readFile(new URL("./highlights.js",import.meta.url),"utf8");
+const html=await readFile(new URL("./highscore/index.html",import.meta.url),"utf8");
+const css=await readFile(new URL("./highscore.css",import.meta.url),"utf8");
+const js=await readFile(new URL("./highscore.js",import.meta.url),"utf8");
 const coreSource=await readFile(new URL("./advisor-core.js",import.meta.url),"utf8");
 const deploy=await readFile(new URL("./deploy.sh",import.meta.url),"utf8");
+const redirects=await readFile(new URL("./_redirects",import.meta.url),"utf8");
 const sandbox={module:{exports:{}}}; vm.runInNewContext(coreSource,sandbox); const A=sandbox.module.exports;
 
-test("the highlights route exposes eight counselors and the four canonical periods",()=>{
+test("the highscore route exposes eight counselors and the four canonical periods",()=>{
   assert.match(html,/Ranking del Consejo/);
   assert.match(html,/id="ranking-body"/);
   assert.match(html,/data-audience="silicio"/);
@@ -60,10 +61,11 @@ test("ranking remains usable and links every row back to its counselor detail",(
   assert.match(html,/<table>/);
 });
 
-test("the signed deployment inlines and stamps the highlights route",()=>{
-  assert.match(deploy,/\$TMP\/highlights\/index\.html/);
-  assert.match(deploy,/highlights\.css/);
-  assert.match(deploy,/highlights\.js/);
-  assert.match(deploy,/Admira Academy Highlights/);
-  assert.match(deploy,/el sello no llegó a highlights\/index\.html/);
+test("the signed deployment inlines and stamps the highscore route",()=>{
+  assert.match(deploy,/\$TMP\/highscore\/index\.html/);
+  assert.match(deploy,/highscore\.css/);
+  assert.match(deploy,/highscore\.js/);
+  assert.match(deploy,/Admira Academy Highscore/);
+  assert.match(deploy,/el sello no llegó a highscore\/index\.html/);
+  assert.match(redirects,/\/highlights \/highscore\/ 301/);
 });

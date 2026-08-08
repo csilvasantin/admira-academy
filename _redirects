@@ -1,0 +1,2 @@
+/highlights /highscore/ 301
+/highlights/* /highscore/:splat 301

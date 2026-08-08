@@ -1,4 +1,4 @@
-(() => {
+(() =>{
   "use strict";
   const A=window.AcademyAdvisorCore;
   if(!A) throw new Error("AcademyAdvisorCore no está disponible");
