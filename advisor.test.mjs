@@ -52,8 +52,44 @@ test("the page exposes the four summaries, accessible controls and honest empty 
 });
 
 test("the signed deployment inlines and stamps the counselor page",()=>{
-  assert.match(deploy,/consejeros\/index\.html.+advisor\.css.+advisor-core\.js.+advisor\.js/);
+  assert.match(deploy,/consejeros\/index\.html.+advisor\.css.+academy-training-core\.js.+advisor-core\.js.+advisor\.js/);
   assert.match(deploy,/Admira Academy Consejeros/);
   assert.match(deploy,/el sello no llegó a consejeros\/index\.html/);
   assert.match(deploy,/MacBookPro14\|MacBookProNegro14\) SUF="MBP14"/);
+});
+
+test("every counselor detail exposes the complete Formar contract",()=>{
+  assert.match(html,/id="form-advisor"[^>]*>Formar a CEO/);
+  assert.match(html,/id="advisor-video-url"/);
+  assert.match(html,/id="validate-advisor-video"/);
+  assert.match(html,/id="import-advisor-video"/);
+  assert.match(html,/id="verified-preview"[^>]*hidden/);
+  assert.match(html,/href="\/#formacion"/);
+  assert.match(css,/\[hidden\]\{display:none!important\}/);
+});
+
+test("YouTube validation requires an explicit counselor and duration review",()=>{
+  assert.match(js,/canonicalYouTubeUrl\(\$\("#advisor-video-url"\)\.value\)/);
+  assert.match(js,/validateVideoDuration\(minutes \* 60,T\.DEFAULT_MAX_DURATION_MINUTES,reviewed\)/);
+  assert.match(js,/youtube\.com\/oembed/);
+  assert.match(js,/durationConfirmedAt:now/);
+  assert.match(html,/He revisado en YouTube que trata de/);
+});
+
+test("Pixeria receives canonical formation tags and is checked through its public index",()=>{
+  assert.match(js,/method:"POST"/);
+  assert.match(js,/buildPixeriaComment\(agent\.id,training\.topic\)/);
+  assert.match(js,/PIXERIA_INDEX/);
+  assert.match(js,/cache:"no-store"/);
+  assert.match(js,/hasRequiredPixeriaTags\(agent\.id,item\)/);
+  assert.match(js,/publicVideo && tagged/);
+});
+
+test("the preview is unlocked only from the successful public verification branch",()=>{
+  const verifiedBranch=js.indexOf("if(publicVideo && tagged)");
+  const showCall=js.indexOf("showVerifiedPreview(training.pixeria.item)");
+  assert.ok(verifiedBranch >= 0 && showCall > verifiedBranch);
+  assert.match(js,/function hidePreview\(\)/);
+  assert.doesNotMatch(html,/id="video-metadata"[^>]*>[\s\S]*?<img/);
+  assert.match(html,/El previo sólo aparece si el vídeo existe como activo público de Pixeria/);
 });
