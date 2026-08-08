@@ -11,6 +11,7 @@
   <meta name="theme-color" content="#080a10">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/academy.css">
+  <script src="/academy-training-core.js" defer></script>
   <script src="/academy.js" defer></script>
 </head>
 <body id="top">
@@ -94,7 +95,7 @@
         <div id="consejo" class="catalog-header">
           <div>
             <p class="catalog-label">Consejo de AdmiraNeXT</p>
-            <p>Ocho sillas canónicas. Selecciona una para abrir su ficha y su itinerario.</p>
+            <p>Ocho estudiantes del Consejo. Consulta su ficha o abre «Formación» para preparar un paquete trazable.</p>
           </div>
           <div class="filters" role="group" aria-label="Filtrar sillas">
             <button class="active" type="button" data-filter="all">Todas</button>
@@ -139,10 +140,83 @@
           <p class="source-note">Fuente: definición operativa del Consejo publicada en Yokup. La preparación mostrada procede únicamente de evidencias guardadas en este navegador.</p>
         </article>
 
+        <section class="training-lab" id="formacion" aria-labelledby="training-title">
+          <div class="training-head">
+            <div>
+              <p class="kicker">03 · Formación por fuente</p>
+              <h2 id="training-title">Preparar formación para <span id="training-role">CEO</span>.</h2>
+              <p id="training-area">Área: visión, producto y dirección.</p>
+            </div>
+            <span class="training-state" id="training-state">Sin iniciar</span>
+          </div>
+
+          <ol class="training-steps" aria-label="Flujo de formación">
+            <li class="active" data-stage-indicator="topic"><span>1</span>Tema</li>
+            <li data-stage-indicator="video"><span>2</span>Vídeo</li>
+            <li data-stage-indicator="pixeria"><span>3</span>Pixeria</li>
+            <li data-stage-indicator="script"><span>4</span>Guion</li>
+            <li data-stage-indicator="delivery"><span>5</span>Entrega</li>
+          </ol>
+
+          <div class="training-workspace">
+            <section class="training-panel" data-stage="topic">
+              <p class="mini-label">1 · Tema adecuado al puesto</p>
+              <label class="field"><span>Tema de formación</span><input id="training-topic" type="text" maxlength="160" placeholder="Escribe un tema concreto"></label>
+              <div class="inline-actions">
+                <button class="button small primary" id="validate-topic" type="button">Validar tema</button>
+                <button class="button small quiet" id="propose-topic" type="button">Proponer tema</button>
+              </div>
+              <div class="inline-notice" id="topic-notice" role="status">La relación con el área del consejero se comprobará antes de buscar.</div>
+              <label class="review-override" id="topic-override-wrap" hidden><input id="topic-override" type="checkbox"> Continuar bajo revisión: reconozco que el tema no coincide claramente con el área.</label>
+            </section>
+
+            <section class="training-panel locked" data-stage="video">
+              <p class="mini-label">2 · Buscar y revisar una fuente real</p>
+              <p>Academy abre una búsqueda pública de YouTube. Elige allí un resultado y pega su URL; no se muestran resultados inventados.</p>
+              <div class="inline-actions">
+                <a class="button small quiet disabled" id="youtube-search" href="#" target="_blank" rel="noopener" aria-disabled="true">Buscar en YouTube ↗</a>
+              </div>
+              <label class="field"><span>URL del vídeo elegido</span><input id="video-url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=…"></label>
+              <button class="button small primary" id="review-video" type="button">Revisar fuente</button>
+              <div class="source-card" id="video-card" hidden></div>
+              <div class="inline-notice" id="video-notice" role="status">Pendiente de elegir y verificar una fuente.</div>
+            </section>
+
+            <section class="training-panel locked" data-stage="pixeria">
+              <p class="mini-label">3 · Importación autorizada</p>
+              <p>La integración pública de Pixeria se usa sólo con autorización explícita. La importación se considera verificada cuando el elemento aparece en su índice público.</p>
+              <label class="review-override"><input id="pixeria-consent" type="checkbox"> Autorizo importar este vídeo seleccionado a Pixeria.</label>
+              <div class="inline-actions"><button class="button small primary" id="import-pixeria" type="button">Importar / reintentar</button><a class="button small quiet" href="https://pixeria.ai/stock.html" target="_blank" rel="noopener">Abrir Pixeria ↗</a></div>
+              <div class="inline-notice pending" id="pixeria-notice" role="status">Pendiente de importar en Pixeria.</div>
+            </section>
+
+            <section class="training-panel locked" data-stage="script">
+              <p class="mini-label">4 · Guion original y atribuible</p>
+              <p>Se crea una guía breve desde el tema y los metadatos públicos. No transcribe ni afirma haber analizado el contenido protegido.</p>
+              <button class="button small primary" id="create-script" type="button">Crear guion</button>
+              <label class="field script-field"><span>Guion de aprendizaje</span><textarea id="training-script" maxlength="5000" placeholder="El guion aparecerá aquí"></textarea></label>
+              <div class="inline-notice pending" id="script-notice" role="status">Guion pendiente.</div>
+            </section>
+
+            <section class="training-panel locked" data-stage="delivery">
+              <p class="mini-label">5 · Cola y entrega verificable</p>
+              <p>La API del Consejo todavía no admite desde Academy el paquete completo con guion. La cola local conserva el paquete; el enlace Live sólo entrega la fuente y nunca se marca como aprendizaje completado.</p>
+              <div class="inline-actions"><button class="button small primary" id="queue-delivery" type="button">Preparar entrega</button><a class="button small quiet disabled" id="council-handoff" href="#" target="_blank" rel="noopener" aria-disabled="true">Enviar sólo fuente a Council Live ↗</a><button class="button small quiet" id="export-package" type="button">Exportar JSON</button></div>
+              <div class="inline-notice pending" id="delivery-notice" role="status">Pendiente de entregar al agente.</div>
+            </section>
+          </div>
+
+          <details class="training-log">
+            <summary>Trazabilidad de esta formación</summary>
+            <div id="training-trace"><p>Aún no hay transiciones registradas.</p></div>
+          </details>
+          <div class="academy-disclaimer" role="note"><span aria-hidden="true">◇</span><p><strong>Sin atribución automática.</strong> Esta herramienta no concede aprendizaje, certificaciones ni puntos. La actividad sólo se puntúa por el flujo canónico de Yokup y con identidad verificada.</p></div>
+        </section>
+
         <section id="itinerario" class="journey" aria-labelledby="journey-title">
           <div class="journey-head">
             <div>
-              <p class="kicker">03 · Itinerario inicial</p>
+              <p class="kicker">04 · Itinerario inicial</p>
               <h2 id="journey-title">Del contexto a un cierre verificable.</h2>
               <p>Un recorrido común para las ocho sillas. Cambiar de agente cambia también su progreso y sus evidencias.</p>
             </div>
@@ -167,7 +241,7 @@
       <div class="wrap carbon-card">
         <div class="carbon-visual" aria-hidden="true"><span></span><span></span><span></span><b>C</b></div>
         <div>
-          <p class="kicker">04 · Siguiente fase</p>
+          <p class="kicker">05 · Siguiente fase</p>
           <h2 id="carbon-title">Agentes de carbono — próximamente.</h2>
           <p>La arquitectura ya separa tipos de alumno, fichas y progreso. La versión humana necesitará identidad, consentimiento, privacidad, revisión y acreditación propios. No están simulados en esta entrega.</p>
           <span class="coming-badge">Estado · fuera del alcance de v1</span>
@@ -178,7 +252,7 @@
     <section id="ayuda" class="help-section" aria-labelledby="help-title">
       <div class="wrap help-grid">
         <div>
-          <p class="kicker">05 · Recurso de apoyo</p>
+          <p class="kicker">06 · Recurso de apoyo</p>
           <h2 id="help-title">El avatar ayuda. La evidencia decide.</h2>
           <p>Si un concepto se atasca, el avatar digital puede orientar por voz o texto. Es un recurso secundario: no selecciona al agente, no valida lecciones y no concede progreso.</p>
         </div>

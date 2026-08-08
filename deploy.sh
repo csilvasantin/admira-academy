@@ -90,17 +90,20 @@ git archive HEAD | tar -x -C "$TMP"
 # la release sea autosuficiente y no dependa de ese router, la copia publicada
 # integra ambos recursos dentro del HTML. La fuente sigue separada para poder
 # mantenerla y probarla en local.
-python3 - "$TMP/index.html" "$TMP/academy.css" "$TMP/academy.js" <<'PY'
+python3 - "$TMP/index.html" "$TMP/academy.css" "$TMP/academy-training-core.js" "$TMP/academy.js" <<'PY'
 import sys
-index_path, css_path, js_path = sys.argv[1:]
+index_path, css_path, core_path, js_path = sys.argv[1:]
 html = open(index_path, encoding="utf-8").read()
 css = open(css_path, encoding="utf-8").read()
+core = open(core_path, encoding="utf-8").read()
 js = open(js_path, encoding="utf-8").read()
 css_tag = '<link rel="stylesheet" href="/academy.css">'
+core_tag = '<script src="/academy-training-core.js" defer></script>'
 js_tag = '<script src="/academy.js" defer></script>'
-if css_tag not in html or js_tag not in html:
+if css_tag not in html or core_tag not in html or js_tag not in html:
     raise SystemExit("✗ no se encontraron los anclajes CSS/JS de la academia")
 html = html.replace(css_tag, "<style>\n" + css + "\n</style>", 1)
+html = html.replace(core_tag, "<script>\n" + core + "\n</script>", 1)
 html = html.replace(
     js_tag,
     '<script>\ndocument.addEventListener("DOMContentLoaded", () => {\n' + js + "\n});\n</script>",
@@ -146,4 +149,12 @@ npx --yes wrangler@4.119.0 pages deploy "$TMP" \
   --project-name admira-academy --branch main \
   --commit-hash "$GIT_FULL" --commit-message "Academia $VERSION · $FIRMA"
 
-echo "✓ https://admira.academy · $VERSION · $FIRMA"
+# bitsandatoms.ai aún conserva DNS externo, pero su proyecto Pages recibe el
+# mismo artefacto firmado. Así existe un único producto desplegable y el enlace
+# del dominio podrá hacerse sin mantener dos Academias divergentes.
+echo "→ Cloudflare Pages (alias preparado: bits-and-atoms)…"
+npx --yes wrangler@4.119.0 pages deploy "$TMP" \
+  --project-name bits-and-atoms --branch main \
+  --commit-hash "$GIT_FULL" --commit-message "Academia $VERSION · $FIRMA"
+
+echo "✓ https://admira.academy + https://bits-and-atoms.pages.dev · $VERSION · $FIRMA"
