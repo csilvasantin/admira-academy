@@ -315,6 +315,7 @@ footer{padding:38px 0;color:var(--dim);font-size:12px}
   .advanced-rail .rail-label{grid-column:1/-1}
   .advanced-rail .rail-facts{grid-template-columns:repeat(4,1fr)}
 }
+@media (max-width:980px){nav>a.nav-help{display:block!important}}
 @media (max-width:700px){
   .academy-section{padding-top:44px}.academy-topline{gap:10px}.workspace-state{align-self:flex-start;white-space:normal}
   .admira-workspace{grid-template-columns:minmax(0,1fr)}

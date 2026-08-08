@@ -160,6 +160,20 @@ html = re.sub(r'(<span class="sig">)[^<]*(</span>)', r'\g<1>' + f'{version} · {
 open(p, "w", encoding="utf-8").write(html)
 PY
 
+VERSION="$VERSION" FIRMA="$FIRMA" python3 - "$TMP/help/index.html" <<'PY'
+import os, re, sys
+p = sys.argv[1]
+version, firma = os.environ["VERSION"], os.environ["FIRMA"]
+html = open(p, encoding="utf-8").read()
+meta = f'<meta name="admiranext-version" content="Admira Academy Ayuda {version}">'
+if re.search(r'<meta\s+name="admiranext-version"[^>]*>', html):
+    html = re.sub(r'<meta\s+name="admiranext-version"[^>]*>', meta, html)
+else:
+    html = re.sub(r'(<meta\s+name="viewport"[^>]*>)', r'\1\n' + meta, html, count=1)
+html = re.sub(r'(<span class="sig">)[^<]*(</span>)', r'\g<1>' + f'{version} · {firma}' + r'\g<2>', html)
+open(p, "w", encoding="utf-8").write(html)
+PY
+
 python3 - "$TMP/version.json" <<PY
 import json, sys, datetime
 json.dump({
@@ -175,6 +189,7 @@ PY
 
 grep -q "$VERSION" "$TMP/index.html" || { echo "✗ el sello no llegó al index.html" >&2; exit 1; }
 grep -q "$VERSION" "$TMP/plataforma/index.html" || { echo "✗ el sello no llegó a plataforma/index.html" >&2; exit 1; }
+grep -q "$VERSION" "$TMP/help/index.html" || { echo "✗ el sello no llegó a help/index.html" >&2; exit 1; }
 
 echo "→ Cloudflare Pages (proyecto admira-academy)…"
 export CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-$(bash ~/Claude/admira-vault/vault-get.sh CLOUDFLARE_API_TOKEN)}"
