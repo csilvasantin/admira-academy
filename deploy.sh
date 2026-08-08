@@ -84,6 +84,27 @@ echo "→ Sello $VERSION · $FIRMA"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 git archive HEAD | tar -x -C "$TMP"
 
+# El dominio canónico conserva un fallback histórico que responde index.html a
+# rutas estáticas nuevas. El preview de Pages sirve sus MIME correctamente, pero
+# admira.academy puede convertir /academy.css y /academy.js en text/html. Para que
+# la release sea autosuficiente y no dependa de ese router, la copia publicada
+# integra ambos recursos dentro del HTML. La fuente sigue separada para poder
+# mantenerla y probarla en local.
+python3 - "$TMP/index.html" "$TMP/academy.css" "$TMP/academy.js" <<'PY'
+import sys
+index_path, css_path, js_path = sys.argv[1:]
+html = open(index_path, encoding="utf-8").read()
+css = open(css_path, encoding="utf-8").read()
+js = open(js_path, encoding="utf-8").read()
+css_tag = '<link rel="stylesheet" href="/academy.css">'
+js_tag = '<script src="/academy.js" defer></script>'
+if css_tag not in html or js_tag not in html:
+    raise SystemExit("✗ no se encontraron los anclajes CSS/JS de la academia")
+html = html.replace(css_tag, "<style>\n" + css + "\n</style>", 1)
+html = html.replace(js_tag, "<script>\n" + js + "\n</script>", 1)
+open(index_path, "w", encoding="utf-8").write(html)
+PY
+
 VERSION="$VERSION" FIRMA="$FIRMA" python3 - "$TMP/index.html" <<'PY'
 import os, re, sys
 p = sys.argv[1]

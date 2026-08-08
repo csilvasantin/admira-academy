@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
 const css = await readFile(new URL("./academy.css", import.meta.url), "utf8");
 const js = await readFile(new URL("./academy.js", import.meta.url), "utf8");
+const deploy = await readFile(new URL("./deploy.sh", import.meta.url), "utf8");
 
 test("the primary navigation enters the academy", () => {
   assert.match(html, /class="nav-cta" href="#academia">Entrar en la academia/);
@@ -41,4 +42,10 @@ test("the avatar remains a secondary external resource", () => {
 test("responsive and reduced-motion safeguards exist", () => {
   assert.match(css, /@media \(max-width:700px\)/);
   assert.match(css, /prefers-reduced-motion:reduce/);
+});
+
+test("the signed release inlines assets to survive the canonical-domain fallback", () => {
+  assert.match(deploy, /html\.replace\(css_tag/);
+  assert.match(deploy, /html\.replace\(js_tag/);
+  assert.match(deploy, /no se encontraron los anclajes CSS\/JS/);
 });
