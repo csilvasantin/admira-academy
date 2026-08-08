@@ -20,7 +20,7 @@ cd "$(dirname "$0")"
 # firma que no case es una firma que no identifica a nadie, y entonces no es firma.
 case "$ADMIRA_RELEASE_MACHINE" in
   MacMini)            SUF="MacMini";;
-  MacBookPro14)       SUF="MBP14";;
+  MacBookPro14|MacBookProNegro14) SUF="MBP14";;
   MacBookPro16)       SUF="MBP16";;
   MacBookAirAzul)     SUF="MBAAzul";;
   MacBookAirRosa)     SUF="MBARosa";;

@@ -55,4 +55,5 @@ test("the signed deployment inlines and stamps the counselor page",()=>{
   assert.match(deploy,/consejeros\/index\.html.+advisor\.css.+advisor-core\.js.+advisor\.js/);
   assert.match(deploy,/Admira Academy Consejeros/);
   assert.match(deploy,/el sello no llegó a consejeros\/index\.html/);
+  assert.match(deploy,/MacBookPro14\|MacBookProNegro14\) SUF="MBP14"/);
 });
