@@ -9,6 +9,8 @@ const css = await readFile(new URL("./advisor.css",import.meta.url),"utf8");
 const deploy = await readFile(new URL("./deploy.sh",import.meta.url),"utf8");
 const coreSource = await readFile(new URL("./advisor-core.js",import.meta.url),"utf8");
 const sandbox={module:{exports:{}}}; vm.runInNewContext(coreSource,sandbox); const A=sandbox.module.exports;
+const trainingSource = await readFile(new URL("./academy-training-core.js",import.meta.url),"utf8");
+const trainingSandbox={module:{exports:{}}}; vm.runInNewContext(trainingSource,trainingSandbox); const T=trainingSandbox.module.exports;
 
 test("each of the eight Council seats has a stable public detail identity",()=>{
   assert.equal(JSON.stringify(A.COUNCIL.map(item=>item.id)),JSON.stringify(["ceo","cto","coo","cfo","cco","cdo","cxo","cso"]));

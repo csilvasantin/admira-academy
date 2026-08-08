@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/advisor.css">
   <script src="/academy-training-core.js" defer></script>
   <script src="/advisor-core.js" defer></script>
+  <script src="/academy-training-core.js" defer></script>
   <script src="/advisor.js" defer></script>
 </head>
 <body>
@@ -21,7 +22,7 @@
     <section class="detail"><div class="wrap detail-layout">
       <aside class="side"><p class="side-title">Consejo</p><nav class="council-nav" id="council-nav" aria-label="Ocho consejeros"></nav></aside>
       <div class="main">
-        <div class="toolbar"><div class="audience-switch" role="group" aria-label="Tipo de agente"><button type="button" data-audience="silicio" aria-pressed="true">◆ Silicio</button><button type="button" data-audience="carbono" aria-pressed="false">○ Carbono</button></div><span class="audience-state" id="audience-state">Agente de silicio · trazabilidad de este navegador</span></div>
+        <div class="toolbar"><div class="toolbar-actions"><div class="audience-switch" role="group" aria-label="Tipo de agente"><button type="button" data-audience="silicio" aria-pressed="true">◆ Silicio</button><button type="button" data-audience="carbono" aria-pressed="false">○ Carbono</button></div><button class="train-open" id="train-open" type="button" aria-expanded="false" aria-controls="training-panel">✦ Formar</button></div><span class="audience-state" id="audience-state">Agente de silicio · trazabilidad de este navegador</span></div>
         <section class="progress-panel" aria-labelledby="progress-label"><div><span>Mejora actual</span><strong id="progress-label">Sin evaluar</strong><p id="progress-detail">Progreso local con evidencia; no equivale a acreditación.</p></div><div class="meter" id="progress-meter"><progress max="100" value="0" aria-label="Progreso de formación"></progress><b id="progress-value">0%</b></div></section>
         <section class="advisor-training" id="advisor-training" aria-labelledby="advisor-training-title" hidden>
           <div class="training-heading"><div><p>Formación del consejero</p><h2 id="advisor-training-title">Formar a CEO</h2></div><button class="close-training" id="close-training" type="button" aria-label="Cerrar formación">×</button></div>
