@@ -36,10 +36,10 @@
     try{
       const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if(parsed && parsed.records){
-        return { version:3, selected:parsed.selected || "ceo", records:parsed.records, trainings:parsed.trainings || {}, topicDrafts:parsed.topicDrafts || {} };
+        return { version:4, selected:parsed.selected || "ceo", records:parsed.records, trainings:parsed.trainings || {}, topicDrafts:parsed.topicDrafts || {} };
       }
     }catch(_error){}
-    return { version:3, selected:"ceo", records:{}, trainings:{}, topicDrafts:{} };
+    return { version:4, selected:"ceo", records:{}, trainings:{}, topicDrafts:{} };
   }
   function saveState(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -53,11 +53,47 @@
   function topicDraft(agentId=state.selected){
     return state.topicDrafts[agentId]?.value || trainingFor(agentId)?.topic || T.defaultTopic(agentId);
   }
+  function maxDurationDraft(agentId=state.selected){
+    const value = state.topicDrafts[agentId]?.maxDurationMinutes ?? trainingFor(agentId)?.maxDurationMinutes ?? T.DEFAULT_MAX_DURATION_MINUTES;
+    const checked = T.validateMaxDuration(value);
+    return checked.valid ? checked.minutes : T.DEFAULT_MAX_DURATION_MINUTES;
+  }
   function saveTopicDraft(source="manual"){
     const value = $("#training-topic").value.trim();
-    state.topicDrafts[state.selected] = { value, source, updatedAt:new Date().toISOString() };
+    state.topicDrafts[state.selected] = { ...(state.topicDrafts[state.selected] || {}), value, source, updatedAt:new Date().toISOString() };
     saveState();
     setLink($("#youtube-search"), value ? T.youtubeSearchUrl(state.selected, value) : "");
+  }
+  function resetDownstream(training, reason){
+    training.pixeria = { status:"pending", detail:`Pendiente: ${reason}` };
+    training.script = { status:"pending", content:"" };
+    training.delivery = { status:"pending", detail:"Pendiente de entregar al agente" };
+  }
+  function normalizeTraining(training){
+    if(!training) return null;
+    if(!T.validateMaxDuration(training.maxDurationMinutes).valid) training.maxDurationMinutes = maxDurationDraft(training.agentId);
+    if(!training.search) training.search = { status:"not_started", query:T.youtubeSearchQuery(training.agentId,training.topic), url:T.youtubeSearchUrl(training.agentId,training.topic), detail:"Pendiente de iniciar la búsqueda pública.", updatedAt:training.updatedAt || training.createdAt };
+    if(training.video && !training.video.durationStatus){ training.video.durationStatus = "pending"; training.video.durationSeconds = null; training.video.durationSource = "oEmbed no aporta duración"; }
+    return training;
+  }
+  function sourceReady(training){ return Boolean(training?.video && training.video.durationStatus === "compatible"); }
+  function saveMaxDuration(){
+    const checked = T.validateMaxDuration($("#max-source-duration").value);
+    if(!checked.valid){ setNotice("#topic-notice", checked.reason, "warning"); return null; }
+    const draft = state.topicDrafts[state.selected] || {};
+    state.topicDrafts[state.selected] = { ...draft, maxDurationMinutes:checked.minutes, updatedAt:new Date().toISOString() };
+    const training = normalizeTraining(trainingFor());
+    if(training){
+      training.maxDurationMinutes = checked.minutes;
+      if(training.video?.durationSeconds){
+        const duration = T.validateVideoDuration(training.video.durationSeconds, checked.minutes, true);
+        training.video.durationStatus = duration.status;
+        training.video.durationDetail = duration.reason;
+        if(!duration.compatible) resetDownstream(training, duration.reason);
+      }
+    }
+    saveState();
+    return checked.minutes;
   }
   function completedCount(agentId){ return LESSONS.filter(lesson => recordFor(agentId).lessons[lesson.id]?.complete === true).length; }
   function statusFor(agentId){
@@ -151,12 +187,18 @@
     T.transition(training, stage, status, detail); saveState(); renderTrainingTrace(training);
   }
   function beginTraining(topic, validation){
-    state.topicDrafts[state.selected] = { value:topic, source:state.topicDrafts[state.selected]?.source || "manual", updatedAt:new Date().toISOString() };
-    let training = trainingFor();
+    const maximum = saveMaxDuration();
+    if(maximum === null) return null;
+    state.topicDrafts[state.selected] = { ...(state.topicDrafts[state.selected] || {}), value:topic, source:state.topicDrafts[state.selected]?.source || "manual", maxDurationMinutes:maximum, updatedAt:new Date().toISOString() };
+    let training = normalizeTraining(trainingFor());
     if(!training || training.topic !== topic){
-      training = T.createTraining(state.selected, topic);
+      training = T.createTraining(state.selected, topic, maximum);
       state.trainings[state.selected] = training;
       recordTransition(training, "tema", validation.relevant ? "validado" : "bajo revisión", validation.relevant ? "Tema relacionado con el área del puesto." : "Tema continuado mediante confirmación explícita de revisión.");
+    }else{
+      training.maxDurationMinutes = maximum;
+      training.search.query = T.youtubeSearchQuery(state.selected, topic);
+      training.search.url = T.youtubeSearchUrl(state.selected, topic);
     }
     saveState(); renderCatalog(); renderTraining();
     return training;
@@ -182,14 +224,68 @@
     validateTopic();
   }
 
+  function updateSearch(training, status, detail, transitionStatus=status){
+    const query = T.youtubeSearchQuery(state.selected, training.topic);
+    training.search = { status, query, url:T.youtubeSearchUrl(state.selected, training.topic), detail, updatedAt:new Date().toISOString() };
+    recordTransition(training, "fuentes", transitionStatus, detail);
+    saveState(); renderTraining();
+  }
+
+  async function startTraining(){
+    saveTopicDraft(state.topicDrafts[state.selected]?.source || "manual");
+    const training = validateTopic();
+    if(!training) return;
+    const button = $("#start-training");
+    button.disabled = true;
+    updateSearch(training, "preparing", "Preparando una consulta pública priorizada para YouTube Shorts.", "preparando consulta");
+    await new Promise(resolve => setTimeout(resolve, 180));
+    updateSearch(training, "searching", `Buscando fuentes con la consulta: ${T.youtubeSearchQuery(state.selected, training.topic)}.`, "buscando fuentes");
+    window.open(training.search.url, "_blank", "noopener");
+    await new Promise(resolve => setTimeout(resolve, 260));
+    updateSearch(training, "ready_for_review", "Consulta lista en YouTube. Academy no importa el listado: revisa el origen, elige un resultado real y pega su URL.", "consulta lista · revisión necesaria");
+    button.disabled = false;
+    showToast("Consulta lista. Revisa los resultados reales en YouTube.");
+  }
+
   function searchInformation(event){
     saveTopicDraft(state.topicDrafts[state.selected]?.source || "manual");
     const training = validateTopic();
     if(!training){ event.preventDefault(); return; }
     const url = T.youtubeSearchUrl(state.selected, training.topic);
     setLink(event.currentTarget, url);
-    recordTransition(training, "fuentes", "búsqueda abierta", "Búsqueda pública de YouTube abierta; resultado pendiente de selección y revisión manual.");
-    setNotice("#video-notice", "Búsqueda pública abierta. Elige un resultado en YouTube, vuelve y pega su URL para revisarlo.", "pending");
+    updateSearch(training, "ready_for_review", "Consulta pública abierta en YouTube; resultado pendiente de selección y revisión manual.", "búsqueda abierta · revisión necesaria");
+  }
+
+  function reportNoResults(){
+    const training = validateTopic();
+    if(!training) return;
+    updateSearch(training, "no_results", "Sin resultado útil declarado. Ajusta el tema o amplía el límite; no se ha seleccionado ninguna fuente.", "sin resultados útiles");
+  }
+
+  function applyDurationReview(training, record=true){
+    const minutes = Number($("#video-duration-minutes").value);
+    const confirmed = $("#duration-confirmed").checked;
+    const seconds = Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes * 60) : null;
+    const checked = T.validateVideoDuration(seconds, training.maxDurationMinutes, confirmed);
+    training.video.declaredDurationSeconds = seconds;
+    training.video.durationSeconds = confirmed ? seconds : null;
+    training.video.durationStatus = checked.status;
+    training.video.durationDetail = checked.reason;
+    training.video.durationSource = confirmed ? "declarada tras revisión explícita en YouTube" : "pendiente de confirmación explícita";
+    training.video.durationConfirmedAt = confirmed && seconds ? new Date().toISOString() : null;
+    if(!checked.compatible) resetDownstream(training, checked.reason);
+    if(record) recordTransition(training, "duración", checked.status, checked.reason);
+    return checked;
+  }
+
+  function verifyDuration(){
+    const training = normalizeTraining(trainingFor());
+    if(!training?.video){ setNotice("#video-notice", "Primero verifica una URL real de YouTube.", "warning"); return; }
+    const canonical = T.canonicalYouTubeUrl($("#video-url").value);
+    if(canonical !== training.video.url){ setNotice("#video-notice", "La URL cambió. Vuelve a verificar sus metadatos antes de declarar la duración.", "warning"); return; }
+    const checked = applyDurationReview(training);
+    saveState(); renderTraining();
+    if(checked.compatible) showToast("Duración compatible confirmada. El flujo puede continuar.");
   }
 
   async function reviewVideo(){
@@ -204,11 +300,11 @@
       const response = await fetch(endpoint, { headers:{ Accept:"application/json" } });
       if(!response.ok) throw new Error(`YouTube respondió ${response.status}`);
       const data = await response.json();
-      training.video = { url:canonical, id:T.extractYouTubeId(canonical), title:data.title, author:data.author_name, thumbnail:data.thumbnail_url, verifiedAt:new Date().toISOString(), metadataSource:endpoint };
-      training.pixeria = { status:"pending", detail:"Pendiente de importar en Pixeria" };
-      training.script = { status:"pending", content:"" };
-      training.delivery = { status:"pending", detail:"Pendiente de entregar al agente" };
-      recordTransition(training, "vídeo", "verificado", `Metadatos públicos: ${data.title} — ${data.author_name}.`);
+      training.video = { url:canonical, id:T.extractYouTubeId(canonical), title:data.title, author:data.author_name, thumbnail:data.thumbnail_url, verifiedAt:new Date().toISOString(), metadataSource:endpoint, durationSeconds:null, declaredDurationSeconds:null, durationStatus:"pending", durationDetail:"Duración pendiente de verificar: YouTube oEmbed no la publica; requiere revisión explícita en el origen.", durationSource:"oEmbed sin duración", durationConfirmedAt:null };
+      training.search = { ...training.search, status:"source_selected", detail:"Fuente real seleccionada; metadatos listos y duración pendiente de revisión.", updatedAt:new Date().toISOString() };
+      resetDownstream(training, "la duración de la fuente aún no está verificada");
+      recordTransition(training, "vídeo", "metadatos verificados · duración pendiente", `Metadatos públicos: ${data.title} — ${data.author_name}. oEmbed no aporta duración.`);
+      if(Number($("#video-duration-minutes").value) > 0 || $("#duration-confirmed").checked) applyDurationReview(training);
       saveState(); renderTraining();
     }catch(error){
       setNotice("#video-notice", `Fuente no disponible o no verificable: ${error.message}. El flujo no continuará con un resultado inventado.`, "warning");
@@ -216,8 +312,9 @@
   }
 
   async function importPixeria(){
-    const training = trainingFor();
+    const training = normalizeTraining(trainingFor());
     if(!training?.video){ setNotice("#pixeria-notice", "Primero verifica un vídeo real.", "warning"); return; }
+    if(!sourceReady(training)){ setNotice("#pixeria-notice", "Bloqueado: confirma una duración real y compatible con el máximo antes de solicitar la importación.", "warning"); return; }
     if(!$("#pixeria-consent").checked){ setNotice("#pixeria-notice", "Falta autorización explícita. Sigue pendiente de importar en Pixeria.", "warning"); return; }
     setNotice("#pixeria-notice", "Importación solicitada; esperando confirmación pública…", "pending");
     try{
@@ -258,8 +355,9 @@
   }
 
   function createScript(){
-    const training = trainingFor();
+    const training = normalizeTraining(trainingFor());
     if(!training?.video){ setNotice("#script-notice", "Primero revisa una fuente real.", "warning"); return; }
+    if(!sourceReady(training)){ setNotice("#script-notice", "Bloqueado: la fuente necesita una duración real confirmada y compatible.", "warning"); return; }
     training.script = { status:"ready", content:T.buildScript(state.selected, training.topic, training.video), createdAt:new Date().toISOString(), basis:"tema + metadatos públicos de YouTube; sin transcripción" };
     recordTransition(training, "guion", "listo", "Guion original creado desde el tema y metadatos públicos; pendiente de revisión humana.");
     renderTraining();
@@ -275,8 +373,9 @@
 
   function queueDelivery(){
     persistScript();
-    const training = trainingFor();
+    const training = normalizeTraining(trainingFor());
     if(!training?.video || !training.script?.content?.trim()){ setNotice("#delivery-notice", "Verifica el vídeo y prepara el guion antes de crear el paquete.", "warning"); return; }
+    if(!sourceReady(training)){ setNotice("#delivery-notice", "Bloqueado: confirma una duración compatible antes de crear la cola.", "warning"); return; }
     const handoffUrl = T.buildCouncilHandoffUrl(state.selected, training.video.url);
     training.delivery = { status:"pending", detail:"Paquete completo en cola local; Council Live sólo puede recibir la fuente", queuedAt:new Date().toISOString(), handoffUrl };
     recordTransition(training, "entrega", "en cola", training.delivery.detail);
@@ -304,36 +403,67 @@
     showToast("Paquete verificable exportado. No implica aprendizaje ni puntos.");
   }
 
+  function renderTrainingFeedback(training){
+    const searchStatus = training?.search?.status || "not_started";
+    const sourceStatus = sourceReady(training) ? "success" : training?.video ? "warning" : "pending";
+    const finalStatus = training?.delivery?.status === "handoff_opened" ? "warning" : training?.script?.content ? "active" : "pending";
+    const feedback = [
+      { state:training ? "success" : "pending", text:training ? `Tema y máximo ${training.maxDurationMinutes} min` : "Tema y límite pendientes" },
+      { state:["preparing","searching"].includes(searchStatus) ? "active" : ["ready_for_review","source_selected"].includes(searchStatus) ? "success" : searchStatus === "no_results" ? "warning" : "pending", text:searchStatus === "preparing" ? "Preparando consulta" : searchStatus === "searching" ? "Buscando fuentes" : searchStatus === "source_selected" ? "Fuente real seleccionada" : searchStatus === "ready_for_review" ? "Consulta lista · revisar" : searchStatus === "no_results" ? "Sin resultados útiles" : "Búsqueda pendiente" },
+      { state:sourceStatus, text:sourceReady(training) ? "Fuente y duración compatibles" : training?.video ? "Duración por verificar" : "Fuente pendiente" },
+      { state:finalStatus, text:training?.delivery?.status === "handoff_opened" ? "Entrega parcial · cola pendiente" : training?.script?.content ? "Guion listo · entrega pendiente" : "Pixeria, guion y cola pendientes" }
+    ];
+    $("#training-feedback").innerHTML = feedback.map((item,index) => `<li class="${item.state}"><span>${index + 1}</span>${escapeHtml(item.text)}</li>`).join("");
+    $("#feedback-summary").textContent = !training ? "Define el tema y el límite para empezar." : searchStatus === "no_results" ? "Sin resultado seleccionado; reformula y vuelve a buscar." : sourceReady(training) ? "Fuente compatible; puedes continuar bajo consentimiento." : training.video ? "Metadatos reales listos; falta confirmar la duración." : searchStatus === "ready_for_review" ? "Consulta lista; la selección requiere revisión en YouTube." : searchStatus === "searching" ? "Búsqueda pública en curso." : "Formación iniciada; falta buscar una fuente.";
+  }
+
   function renderTraining(){
-    const agent = currentAgent(); const role = T.role(agent.id); const training = trainingFor();
+    const agent = currentAgent(); const role = T.role(agent.id); const training = normalizeTraining(trainingFor());
     $("#training-role").textContent = agent.role;
     $("#training-area").textContent = `Área: ${role.area}.`;
-    $("#training-state").textContent = training ? (training.delivery?.status === "handoff_opened" ? "Entrega parcial · paquete pendiente" : "Formación en curso") : "Sin iniciar";
+    $("#training-state").textContent = training ? (training.delivery?.status === "handoff_opened" ? "Entrega parcial · paquete pendiente" : sourceReady(training) ? "Fuente compatible · revisión activa" : "Formación en curso") : "Sin iniciar";
     const draft = topicDraft(agent.id);
     $("#training-topic").value = draft;
+    $("#max-source-duration").value = String(maxDurationDraft(agent.id));
     $("#topic-override").checked = false; $("#topic-override-wrap").hidden = true;
+    const query = training?.search?.query || T.youtubeSearchQuery(agent.id, draft);
+    $("#search-query").textContent = query;
     setLink($("#youtube-search"), draft ? T.youtubeSearchUrl(agent.id, draft) : "");
+    const searchNotice = training?.search?.detail || "Pendiente de iniciar la consulta pública.";
+    setNotice("#search-notice", searchNotice, training?.search?.status === "no_results" ? "warning" : ["ready_for_review","source_selected"].includes(training?.search?.status) ? "success" : "pending");
     $("#video-url").value = training?.video?.url || "";
+    const durationSeconds = training?.video?.durationSeconds || training?.video?.declaredDurationSeconds;
+    $("#video-duration-minutes").value = durationSeconds ? String(Math.round((durationSeconds / 60) * 10) / 10) : "";
+    $("#duration-confirmed").checked = Boolean(training?.video?.durationConfirmedAt);
     const card = $("#video-card");
     if(training?.video){
+      const durationLabel = training.video.durationStatus === "compatible" ? `${Math.round((training.video.durationSeconds / 60) * 10) / 10} min · compatible` : training.video.durationStatus === "exceeds_limit" ? `${Math.round((training.video.durationSeconds / 60) * 10) / 10} min · supera el máximo` : "duración pendiente de verificar";
       card.hidden = false;
-      card.innerHTML = `${training.video.thumbnail ? `<img src="${escapeHtml(training.video.thumbnail)}" alt="">` : ""}<div><span>FUENTE VERIFICADA · YOUTUBE</span><strong>${escapeHtml(training.video.title)}</strong><p>${escapeHtml(training.video.author)}</p><a href="${escapeHtml(training.video.url)}" target="_blank" rel="noopener">Revisar vídeo en origen ↗</a></div>`;
-      setNotice("#video-notice", `Fuente verificada el ${formatDate(training.video.verifiedAt)}. Revísala antes de continuar.`, "success");
-    }else{ card.hidden = true; setNotice("#video-notice", "Pendiente de elegir y verificar una fuente.", "pending"); }
-    setNotice("#pixeria-notice", training?.pixeria?.detail || "Pendiente de importar en Pixeria.", training?.pixeria?.status === "verified" ? "success" : training?.pixeria?.status === "imported_needs_tags" ? "warning" : "pending");
+      card.innerHTML = `${training.video.thumbnail ? `<img src="${escapeHtml(training.video.thumbnail)}" alt="">` : ""}<div><span>METADATOS VERIFICADOS · YOUTUBE</span><strong>${escapeHtml(training.video.title)}</strong><p>${escapeHtml(training.video.author)} · ${escapeHtml(durationLabel)}</p><a href="${escapeHtml(training.video.url)}" target="_blank" rel="noopener">Revisar vídeo y duración en origen ↗</a></div>`;
+      setNotice("#video-notice", training.video.durationDetail || "YouTube oEmbed no aporta duración. Revísala y confírmala explícitamente.", training.video.durationStatus === "compatible" ? "success" : "warning");
+    }else{ card.hidden = true; setNotice("#video-notice", training?.search?.status === "no_results" ? "No hay fuente seleccionada. Ajusta el tema o el límite y vuelve a buscar." : "Pendiente de elegir y verificar una fuente.", training?.search?.status === "no_results" ? "warning" : "pending"); }
+    const ready = sourceReady(training);
+    const pixeriaDetail = !ready && training?.video ? "Bloqueada hasta confirmar una duración real y compatible." : training?.pixeria?.detail || "Pendiente de importar en Pixeria.";
+    setNotice("#pixeria-notice", pixeriaDetail, training?.pixeria?.status === "verified" ? "success" : !ready && training?.video || training?.pixeria?.status === "imported_needs_tags" ? "warning" : "pending");
     $("#training-script").value = training?.script?.content || "";
-    setNotice("#script-notice", training?.script?.status === "ready" || training?.script?.status === "edited" ? `Guion ${training.script.status === "edited" ? "editado" : "listo"}; fuente y alcance declarados.` : "Guion pendiente.", training?.script?.status === "ready" || training?.script?.status === "edited" ? "success" : "pending");
-    setNotice("#delivery-notice", training?.delivery?.detail || "Pendiente de entregar al agente.", training?.delivery?.status === "handoff_opened" ? "warning" : "pending");
+    const hasScript = Boolean(training?.script?.content?.trim());
+    setNotice("#script-notice", !ready && training?.video ? "Bloqueado hasta confirmar una duración compatible." : hasScript ? `Guion ${training.script.status === "edited" ? "editado" : "listo"}; fuente y alcance declarados.` : "Guion pendiente.", hasScript ? "success" : !ready && training?.video ? "warning" : "pending");
+    setNotice("#delivery-notice", !ready && training?.video ? "Bloqueada hasta validar la fuente y preparar un guion atribuible." : training?.delivery?.detail || "Pendiente de entregar al agente.", training?.delivery?.status === "handoff_opened" ? "warning" : "pending");
     setLink($("#council-handoff"), training?.delivery?.handoffUrl || "");
+    $("#verify-duration").disabled = !training?.video;
+    $("#import-pixeria").disabled = !ready;
+    $("#create-script").disabled = !ready;
+    $("#queue-delivery").disabled = !ready || !hasScript;
     $$('[data-stage]').forEach((panel, index) => panel.classList.toggle("locked", index > 0 && !training));
     $$('[data-stage-indicator]').forEach((item, index) => item.classList.toggle("active", index === 0 || Boolean(training)));
+    renderTrainingFeedback(training);
     renderTrainingTrace(training);
   }
 
   function renderTrainingTrace(training){
     const node = $("#training-trace");
     if(!training){ node.innerHTML = "<p>Aún no hay transiciones registradas.</p>"; return; }
-    node.innerHTML = `<dl><div><dt>Estudiante</dt><dd>${escapeHtml(T.role(training.agentId).role)} · ${escapeHtml(T.role(training.agentId).area)}</dd></div><div><dt>Tema</dt><dd>${escapeHtml(training.topic)}</dd></div><div><dt>Creada</dt><dd>${formatDate(training.createdAt)}</dd></div></dl><ol>${training.transitions.slice().reverse().map(item => `<li><time datetime="${escapeHtml(item.at)}">${formatDate(item.at)}</time><span><b>${escapeHtml(item.stage)} · ${escapeHtml(item.status)}</b>${escapeHtml(item.detail)}</span></li>`).join("")}</ol>`;
+    node.innerHTML = `<dl><div><dt>Estudiante</dt><dd>${escapeHtml(T.role(training.agentId).role)} · ${escapeHtml(T.role(training.agentId).area)}</dd></div><div><dt>Tema</dt><dd>${escapeHtml(training.topic)}</dd></div><div><dt>Máximo</dt><dd>${escapeHtml(training.maxDurationMinutes)} min · requisito de selección</dd></div><div><dt>Creada</dt><dd>${formatDate(training.createdAt)}</dd></div></dl><ol>${training.transitions.slice().reverse().map(item => `<li><time datetime="${escapeHtml(item.at)}">${formatDate(item.at)}</time><span><b>${escapeHtml(item.stage)} · ${escapeHtml(item.status)}</b>${escapeHtml(item.detail)}</span></li>`).join("")}</ol>`;
   }
   function formatDate(value){
     try{ return new Intl.DateTimeFormat("es-ES", {dateStyle:"short",timeStyle:"short"}).format(new Date(value)); }
@@ -361,8 +491,12 @@
   $("#validate-topic").addEventListener("click", validateTopic);
   $("#propose-topic").addEventListener("click", proposeTopic);
   $("#training-topic").addEventListener("input", () => saveTopicDraft("manual"));
+  $("#max-source-duration").addEventListener("change", () => { if(saveMaxDuration() !== null) renderTraining(); });
+  $("#start-training").addEventListener("click", startTraining);
   $("#youtube-search").addEventListener("click", searchInformation);
+  $("#report-no-results").addEventListener("click", reportNoResults);
   $("#review-video").addEventListener("click", reviewVideo);
+  $("#verify-duration").addEventListener("click", verifyDuration);
   $("#import-pixeria").addEventListener("click", importPixeria);
   $("#create-script").addEventListener("click", createScript);
   $("#training-script").addEventListener("change", persistScript);

@@ -60,7 +60,38 @@ test("YouTube discovery is public and selection must be a real reviewable URL", 
   assert.match(js, /const requestedUrl = \$\("#video-url"\)\.value;[\s\S]*canonicalYouTubeUrl\(requestedUrl\)/);
   assert.match(js, /no continuar.+resultado inventado/i);
   assert.match(html, />Buscar información ↗</);
-  assert.match(js, /"fuentes", "búsqueda abierta"/);
+  assert.match(js, /"búsqueda abierta · revisión necesaria"/);
+});
+
+test("training starts visibly with a five-minute selection limit and continuous feedback", () => {
+  assert.match(html, /id="start-training"[^>]*>Empezar formación</);
+  assert.match(html, /id="max-source-duration"[^>]*min="1"[^>]*max="30"[^>]*value="5"/);
+  assert.match(html, /id="training-feedback"[^>]*aria-live="polite"/);
+  assert.match(js, /"preparing"[\s\S]*"searching"[\s\S]*"ready_for_review"/);
+  const training = core.createTraining("cto", core.defaultTopic("cto"), 5, () => "2026-08-08T12:00:00.000Z");
+  assert.equal(training.maxDurationMinutes, 5);
+  assert.match(training.search.query, /tecnología y arquitectura.+YouTube Shorts/i);
+});
+
+test("source duration must be explicitly confirmed and within the maximum", () => {
+  assert.equal(core.validateMaxDuration(5).valid, true);
+  assert.equal(core.validateMaxDuration(5).minutes, 5);
+  assert.equal(core.validateMaxDuration(0).valid, false);
+  assert.equal(core.validateMaxDuration(31).valid, false);
+  assert.equal(core.validateVideoDuration(null, 5, false).status, "pending");
+  assert.equal(core.validateVideoDuration(300, 5, true).status, "compatible");
+  assert.equal(core.validateVideoDuration(301, 5, true).status, "exceeds_limit");
+  assert.match(html, /id="duration-confirmed"/);
+  assert.match(js, /if\(!sourceReady\(training\)\)/);
+  assert.match(js, /oEmbed no publica la duración/);
+});
+
+test("search, no-result, duration and delivery feedback remain in persisted training state", () => {
+  assert.match(js, /training\.search = \{ status, query/);
+  assert.match(js, /"no_results"/);
+  assert.match(js, /durationStatus/);
+  assert.match(js, /localStorage\.setItem\(STORAGE_KEY/);
+  assert.match(js, /Bloqueada hasta confirmar una duración real y compatible/);
 });
 
 test("the AdmiraNeXT shell prioritizes the tool and exposes collapsible controls", () => {

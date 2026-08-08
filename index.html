@@ -171,12 +171,22 @@
             <li data-stage-indicator="delivery"><span>5</span>Entrega</li>
           </ol>
 
+          <section class="training-feedback" aria-labelledby="feedback-title">
+            <div><p class="mini-label" id="feedback-title">Feedback continuo</p><strong id="feedback-summary">Preparado para iniciar</strong></div>
+            <ol id="training-feedback" aria-live="polite"><li class="pending"><span>1</span>Tema y límite pendientes</li><li class="pending"><span>2</span>Búsqueda pendiente</li><li class="pending"><span>3</span>Fuente pendiente</li><li class="pending"><span>4</span>Entrega pendiente</li></ol>
+          </section>
+
           <div class="training-workspace">
             <section class="training-panel" data-stage="topic">
               <p class="mini-label">1 · Tema adecuado al puesto</p>
-              <label class="field"><span>Tema de formación</span><input id="training-topic" type="text" maxlength="160" placeholder="Escribe un tema concreto"></label>
+              <div class="training-setup-grid">
+                <label class="field"><span>Tema de formación</span><input id="training-topic" type="text" maxlength="160" placeholder="Escribe un tema concreto"></label>
+                <label class="field"><span>Duración máxima de la fuente</span><span class="duration-input"><input id="max-source-duration" type="number" min="1" max="30" step="1" inputmode="decimal" value="5"><b>min</b></span></label>
+              </div>
+              <p class="duration-help">Límite de selección: 5 min por defecto. No afirma ni calcula la duración del vídeo.</p>
               <div class="inline-actions">
-                <button class="button small primary" id="validate-topic" type="button">Validar tema</button>
+                <button class="button start-training primary" id="start-training" type="button">Empezar formación</button>
+                <button class="button small quiet" id="validate-topic" type="button">Validar tema</button>
                 <button class="button small quiet" id="propose-topic" type="button">Proponer tema</button>
               </div>
               <div class="inline-notice" id="topic-notice" role="status">La relación con el área del consejero se comprobará antes de buscar.</div>
@@ -185,12 +195,19 @@
 
             <section class="training-panel locked" data-stage="video">
               <p class="mini-label">2 · Buscar y revisar una fuente real</p>
-              <p>Academy abre una búsqueda pública de YouTube. Elige allí un resultado y pega su URL; no se muestran resultados inventados.</p>
+              <p>Academy prepara una consulta pública que prioriza YouTube Shorts. Los resultados se revisan en YouTube: Academy no inventa ni copia una lista.</p>
+              <div class="search-query"><span>Consulta</span><code id="search-query">Pendiente de iniciar</code></div>
               <div class="inline-actions">
                 <a class="button small primary" id="youtube-search" href="#" target="_blank" rel="noopener" aria-disabled="false">Buscar información ↗</a>
+                <button class="button small quiet" id="report-no-results" type="button">No hay resultado útil</button>
               </div>
+              <div class="inline-notice pending" id="search-notice" role="status">Pendiente de preparar la consulta.</div>
               <label class="field"><span>URL del vídeo elegido</span><input id="video-url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=…"></label>
-              <button class="button small primary" id="review-video" type="button">Revisar fuente</button>
+              <div class="duration-review">
+                <label class="field"><span>Duración observada</span><span class="duration-input"><input id="video-duration-minutes" type="number" min="0.1" max="30" step="0.1" inputmode="decimal" placeholder="Ej. 0,8"><b>min</b></span></label>
+                <label class="review-override"><input id="duration-confirmed" type="checkbox"> Confirmo que he revisado la duración visible en YouTube.</label>
+              </div>
+              <div class="inline-actions"><button class="button small primary" id="review-video" type="button">Revisar fuente</button><button class="button small quiet" id="verify-duration" type="button">Validar duración</button></div>
               <div class="source-card" id="video-card" hidden></div>
               <div class="inline-notice" id="video-notice" role="status">Pendiente de elegir y verificar una fuente.</div>
             </section>

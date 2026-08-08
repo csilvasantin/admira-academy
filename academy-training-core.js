@@ -17,6 +17,7 @@
   };
 
   const normalize = value => String(value || "").toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const DEFAULT_MAX_DURATION_MINUTES = 5;
 
   function role(agentId){ return ROLES[agentId] || null; }
   function defaultTopic(agentId){ return role(agentId)?.defaultTopic || ""; }
@@ -33,10 +34,25 @@
     const matched = item.keywords.filter(keyword => normalized.includes(normalize(keyword)));
     return matched.length ? { relevant:true, matched } : { relevant:false, reason:`No vemos una relación clara con ${item.area}. Puedes reformularlo o continuar bajo revisión explícita.` };
   }
-  function youtubeSearchUrl(agentId, topic){
+  function validateMaxDuration(value){
+    const minutes = Number(value);
+    if(!Number.isFinite(minutes) || minutes < 1 || minutes > 30) return { valid:false, reason:"El límite debe estar entre 1 y 30 minutos." };
+    return { valid:true, minutes:Math.round(minutes * 10) / 10 };
+  }
+  function validateVideoDuration(durationSeconds, maxDurationMinutes, confirmed=false){
+    const max = validateMaxDuration(maxDurationMinutes);
+    if(!max.valid) return { status:"invalid_limit", compatible:false, reason:max.reason };
+    const seconds = Number(durationSeconds);
+    if(!confirmed || !Number.isFinite(seconds) || seconds <= 0) return { status:"pending", compatible:false, reason:"Duración pendiente de verificar mediante revisión explícita." };
+    const compatible = seconds <= max.minutes * 60;
+    return { status:compatible ? "compatible" : "exceeds_limit", compatible, seconds, maxMinutes:max.minutes, reason:compatible ? `Duración compatible con el máximo de ${max.minutes} min.` : `La fuente supera el máximo de ${max.minutes} min.` };
+  }
+  function youtubeSearchQuery(agentId, topic){
     const item = role(agentId);
-    const query = `${topic} ${item ? item.area : "formación profesional"}`.trim();
-    return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    return `${topic} ${item ? item.area : "formación profesional"} YouTube Shorts`.trim();
+  }
+  function youtubeSearchUrl(agentId, topic){
+    return `https://www.youtube.com/results?search_query=${encodeURIComponent(youtubeSearchQuery(agentId, topic))}`;
   }
   function extractYouTubeId(input){
     try{
@@ -73,8 +89,11 @@
       "Nota de autoría: este guion es una estructura original generada por Academy a partir del tema y los metadatos públicos; no es una transcripción del vídeo."
     ].join("\n");
   }
-  function createTraining(agentId, topic, now=()=>new Date().toISOString()){
-    return { id:`training-${agentId}-${Date.now()}`, agentId, topic, source:"YouTube", video:null, pixeria:{status:"pending",detail:"Pendiente de importar en Pixeria"}, script:{status:"pending",content:""}, delivery:{status:"pending",detail:"Pendiente de entregar al agente"}, createdAt:now(), updatedAt:now(), transitions:[] };
+  function createTraining(agentId, topic, maxDurationMinutes=DEFAULT_MAX_DURATION_MINUTES, now=()=>new Date().toISOString()){
+    if(typeof maxDurationMinutes === "function"){ now = maxDurationMinutes; maxDurationMinutes = DEFAULT_MAX_DURATION_MINUTES; }
+    const checked = validateMaxDuration(maxDurationMinutes);
+    const maximum = checked.valid ? checked.minutes : DEFAULT_MAX_DURATION_MINUTES;
+    return { id:`training-${agentId}-${Date.now()}`, agentId, topic, maxDurationMinutes:maximum, source:"YouTube", search:{status:"not_started",query:youtubeSearchQuery(agentId,topic),url:youtubeSearchUrl(agentId,topic),detail:"Pendiente de iniciar la búsqueda pública.",updatedAt:now()}, video:null, pixeria:{status:"pending",detail:"Pendiente de importar en Pixeria"}, script:{status:"pending",content:""}, delivery:{status:"pending",detail:"Pendiente de entregar al agente"}, createdAt:now(), updatedAt:now(), transitions:[] };
   }
   function transition(training, stage, status, detail, now=()=>new Date().toISOString()){
     const at = now();
@@ -100,5 +119,5 @@
     return Boolean(info && tags.includes("formacion") && tags.includes(normalize(info.tag)));
   }
 
-  return { ROLES, role, defaultTopic, proposeTopic, validateTopic, youtubeSearchUrl, extractYouTubeId, canonicalYouTubeUrl, buildScript, createTraining, transition, buildCouncilHandoffUrl, buildPixeriaComment, hasRequiredPixeriaTags };
+  return { ROLES, DEFAULT_MAX_DURATION_MINUTES, role, defaultTopic, proposeTopic, validateTopic, validateMaxDuration, validateVideoDuration, youtubeSearchQuery, youtubeSearchUrl, extractYouTubeId, canonicalYouTubeUrl, buildScript, createTraining, transition, buildCouncilHandoffUrl, buildPixeriaComment, hasRequiredPixeriaTags };
 });
