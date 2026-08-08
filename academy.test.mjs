@@ -46,6 +46,7 @@ test("responsive and reduced-motion safeguards exist", () => {
 
 test("the signed release inlines assets to survive the canonical-domain fallback", () => {
   assert.match(deploy, /html\.replace\(css_tag/);
-  assert.match(deploy, /html\.replace\(js_tag/);
+  assert.match(deploy, /html\s*=\s*html\.replace\(\s*js_tag/);
+  assert.match(deploy, /DOMContentLoaded/);
   assert.match(deploy, /no se encontraron los anclajes CSS\/JS/);
 });

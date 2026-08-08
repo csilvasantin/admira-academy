@@ -101,7 +101,11 @@ js_tag = '<script src="/academy.js" defer></script>'
 if css_tag not in html or js_tag not in html:
     raise SystemExit("✗ no se encontraron los anclajes CSS/JS de la academia")
 html = html.replace(css_tag, "<style>\n" + css + "\n</style>", 1)
-html = html.replace(js_tag, "<script>\n" + js + "\n</script>", 1)
+html = html.replace(
+    js_tag,
+    '<script>\ndocument.addEventListener("DOMContentLoaded", () => {\n' + js + "\n});\n</script>",
+    1,
+)
 open(index_path, "w", encoding="utf-8").write(html)
 PY
 
