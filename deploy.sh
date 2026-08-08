@@ -157,6 +157,26 @@ html = html.replace(js_tag, '<script>\ndocument.addEventListener("DOMContentLoad
 open(index_path, "w", encoding="utf-8").write(html)
 PY
 
+# /highlights reutiliza el núcleo de consejeros y ordena las ocho sillas con la
+# misma trazabilidad local. Se integra para conservar el contrato autosuficiente.
+python3 - "$TMP/highlights/index.html" "$TMP/highlights.css" "$TMP/advisor-core.js" "$TMP/highlights.js" <<'PY'
+import sys
+index_path, css_path, core_path, js_path = sys.argv[1:]
+html = open(index_path, encoding="utf-8").read()
+css = open(css_path, encoding="utf-8").read()
+core = open(core_path, encoding="utf-8").read()
+js = open(js_path, encoding="utf-8").read()
+css_tag = '<link rel="stylesheet" href="/highlights.css">'
+core_tag = '<script src="/advisor-core.js" defer></script>'
+js_tag = '<script src="/highlights.js" defer></script>'
+if css_tag not in html or core_tag not in html or js_tag not in html:
+    raise SystemExit("✗ no se encontraron los anclajes de highlights")
+html = html.replace(css_tag, "<style>\n" + css + "\n</style>", 1)
+html = html.replace(core_tag, "<script>\n" + core + "\n</script>", 1)
+html = html.replace(js_tag, '<script>\ndocument.addEventListener("DOMContentLoaded", () => {\n' + js + "\n});\n</script>", 1)
+open(index_path, "w", encoding="utf-8").write(html)
+PY
+
 VERSION="$VERSION" FIRMA="$FIRMA" python3 - "$TMP/index.html" <<'PY'
 import os, re, sys
 p = sys.argv[1]
@@ -212,6 +232,20 @@ html = re.sub(r'(<span class="sig">)[^<]*(</span>)', r'\g<1>' + f'{version} · {
 open(p, "w", encoding="utf-8").write(html)
 PY
 
+VERSION="$VERSION" FIRMA="$FIRMA" python3 - "$TMP/highlights/index.html" <<'PY'
+import os, re, sys
+p = sys.argv[1]
+version, firma = os.environ["VERSION"], os.environ["FIRMA"]
+html = open(p, encoding="utf-8").read()
+meta = f'<meta name="admiranext-version" content="Admira Academy Highlights {version}">'
+if re.search(r'<meta\s+name="admiranext-version"[^>]*>', html):
+    html = re.sub(r'<meta\s+name="admiranext-version"[^>]*>', meta, html)
+else:
+    html = re.sub(r'(<meta\s+name="viewport"[^>]*>)', r'\1\n' + meta, html, count=1)
+html = re.sub(r'(<span class="sig">)[^<]*(</span>)', r'\g<1>' + f'{version} · {firma}' + r'\g<2>', html)
+open(p, "w", encoding="utf-8").write(html)
+PY
+
 python3 - "$TMP/version.json" <<PY
 import json, sys, datetime
 json.dump({
@@ -229,6 +263,7 @@ grep -q "$VERSION" "$TMP/index.html" || { echo "✗ el sello no llegó al index.
 grep -q "$VERSION" "$TMP/plataforma/index.html" || { echo "✗ el sello no llegó a plataforma/index.html" >&2; exit 1; }
 grep -q "$VERSION" "$TMP/help/index.html" || { echo "✗ el sello no llegó a help/index.html" >&2; exit 1; }
 grep -q "$VERSION" "$TMP/consejeros/index.html" || { echo "✗ el sello no llegó a consejeros/index.html" >&2; exit 1; }
+grep -q "$VERSION" "$TMP/highlights/index.html" || { echo "✗ el sello no llegó a highlights/index.html" >&2; exit 1; }
 
 echo "→ Cloudflare Pages (proyecto admira-academy)…"
 export CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-$(bash ~/Claude/admira-vault/vault-get.sh CLOUDFLARE_API_TOKEN)}"

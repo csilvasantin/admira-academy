@@ -100,9 +100,10 @@
   function period(id){ return PERIODS.find(item => item.id === id) || PERIODS[0]; }
   function within(items, periodId, now=Date.now()){
     const selected = period(periodId);
-    if(selected.ms === null) return items.slice();
+    const maximum = Number(now);
+    if(selected.ms === null) return items.filter(item => new Date(item.at).getTime() <= maximum);
     const minimum = Number(now) - selected.ms;
-    return items.filter(item => new Date(item.at).getTime() >= minimum);
+    return items.filter(item => { const timestamp=new Date(item.at).getTime(); return timestamp >= minimum && timestamp <= maximum; });
   }
   function summarize(items, periodId, now=Date.now()){
     const filtered = within(items,periodId,now);
@@ -117,6 +118,21 @@
     const academy = parseState(states.academy), lessons = safeObject(safeObject(safeObject(academy.records)[id]).lessons);
     const completed = Object.values(lessons).filter(item => safeObject(item).complete === true).length;
     return {value:Math.round(Math.min(4,completed)/4*100),label:completed ? `${completed} de 4 lecciones` : "Sin evaluar",detail:completed === 4 ? "Recorrido local completo; revisión externa pendiente." : "Progreso local con evidencia; no equivale a acreditación."};
+  }
+  function leaderboard(audienceValue, states={}, periodId="day", now=Date.now()){
+    const selectedAudience=audience(audienceValue), selectedPeriod=period(periodId).id;
+    const rows=COUNCIL.map(agent => {
+      const activities=collect(agent.id,selectedAudience,states).filter(item=>!String(item.id || "").startsWith("transition-"));
+      const summary=summarize(activities,selectedPeriod,now);
+      const lifetime=summarize(activities,"total",now);
+      return {...agent,score:summary.total,studies:summary.total,improvements:summary.improvements,read:summary.read,viewed:summary.viewed,lifetime:lifetime.total};
+    }).sort((a,b)=>b.score-a.score || a.seat.localeCompare(b.seat));
+    let previousScore=null, previousRank=0;
+    return rows.map((row,index)=>{
+      const rank=row.score === 0 ? null : row.score === previousScore ? previousRank : index+1;
+      previousScore=row.score; if(rank !== null) previousRank=rank;
+      return {...row,rank};
+    });
   }
 
   function youtubeId(value){
@@ -140,5 +156,5 @@
     return candidates.sort((a,b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0] || null;
   }
 
-  return {COUNCIL,LESSONS,PERIODS,council,audience,parseState,collect,period,within,summarize,progress,youtubeId,pixeriaItems,findPixeriaVideo};
+  return {COUNCIL,LESSONS,PERIODS,council,audience,parseState,collect,period,within,summarize,progress,leaderboard,youtubeId,pixeriaItems,findPixeriaVideo};
 });
