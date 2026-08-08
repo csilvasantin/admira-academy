@@ -81,8 +81,10 @@ test("YouTube validation requires an explicit counselor and duration review",()=
 test("Pixeria receives canonical formation tags and is checked through its public index",()=>{
   assert.match(js,/method:"POST"/);
   assert.match(js,/buildPixeriaComment\(agent\.id,training\.topic\)/);
+  assert.match(js,/tags:\["formacion",T\.role\(agent\.id\)\.tag\]/);
   assert.match(js,/PIXERIA_INDEX/);
   assert.match(js,/cache:"no-store"/);
+  assert.match(js,/findPixeriaVideo\(data,training\.video\.url\)/);
   assert.match(js,/hasRequiredPixeriaTags\(agent\.id,item\)/);
   assert.match(js,/publicVideo && tagged/);
 });

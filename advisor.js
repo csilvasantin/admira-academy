@@ -163,7 +163,7 @@
     $("#import-advisor-video").disabled=true;
     setNotice("#pixeria-verification-notice","Solicitando la importación etiquetada a Pixeria…");
     try{
-      const response=await fetch(PIXERIA_IMPORT,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({url:training.video.url,format:"video",comment:T.buildPixeriaComment(agent.id,training.topic)})});
+      const response=await fetch(PIXERIA_IMPORT,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({url:training.video.url,format:"video",comment:T.buildPixeriaComment(agent.id,training.topic),tags:["formacion",T.role(agent.id).tag]})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(data.error || data.message || `Pixeria respondió ${response.status}`);
       training.pixeria={status:"processing",jobId:data.jobId || data.id || data.job_id || "",detail:"Importación aceptada; esperando el índice público.",requestedAt:new Date().toISOString()};
@@ -176,9 +176,6 @@
       setNotice("#pixeria-verification-notice",training.pixeria.detail,"error"); hidePreview();
     }finally{$("#import-advisor-video").disabled=!sourceReady(trainingFor());}
   }
-  function sameSource(item,canonical){
-    return [item?.prompt,item?.sourceUrl,item?.source_url,item?.originalUrl,item?.original_url].some(value=>T.canonicalYouTubeUrl(value) === canonical);
-  }
   async function verifyPixeriaIndex(poll=true){
     const training=trainingFor(); if(!sourceReady(training)) return false;
     $("#verify-advisor-video").disabled=true; hidePreview();
@@ -188,8 +185,8 @@
         if(training.pixeria?.jobId) await fetch(`${PIXERIA_STATUS}?id=${encodeURIComponent(training.pixeria.jobId)}`,{headers:{Accept:"application/json"}}).catch(()=>null);
         const response=await fetch(`${PIXERIA_INDEX}?t=${Date.now()}`,{cache:"no-store",headers:{Accept:"application/json"}});
         if(!response.ok) throw new Error(`índice ${response.status}`);
-        const data=await response.json(); const items=Array.isArray(data) ? data : (data.items || data.stock || []);
-        const item=items.find(candidate=>sameSource(candidate,training.video.url));
+        const data=await response.json();
+        const item=A.findPixeriaVideo(data,training.video.url);
         if(item){
           const publicVideo=item.type === "video" && (!item.mime || String(item.mime).startsWith("video/")) && /^https:\/\//.test(String(item.url || ""));
           const tagged=T.hasRequiredPixeriaTags(agent.id,item);
