@@ -11,6 +11,10 @@ const coreSource = await readFile(new URL("./advisor-core.js",import.meta.url),"
 const sandbox={module:{exports:{}}}; vm.runInNewContext(coreSource,sandbox); const A=sandbox.module.exports;
 const trainingSource = await readFile(new URL("./academy-training-core.js",import.meta.url),"utf8");
 const trainingSandbox={module:{exports:{}}}; vm.runInNewContext(trainingSource,trainingSandbox); const T=trainingSandbox.module.exports;
+const importProxySource = await readFile(new URL("./functions/api/pixeria-import.js",import.meta.url),"utf8");
+const statusProxySource = await readFile(new URL("./functions/api/pixeria-status.js",import.meta.url),"utf8");
+const tagsProxySource = await readFile(new URL("./functions/api/pixeria-tags.js",import.meta.url),"utf8");
+const moduleFromSource = source => import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
 
 test("each of the eight Council seats has a stable public detail identity",()=>{
   assert.equal(JSON.stringify(A.COUNCIL.map(item=>item.id)),JSON.stringify(["ceo","cto","coo","cfo","cco","cdo","cxo","cso"]));
@@ -84,25 +88,56 @@ test("Pixeria receives canonical formation tags and is checked through its publi
   assert.match(js,/tags:\["formacion",T\.role\(agent\.id\)\.tag\]/);
   assert.match(js,/PIXERIA_INDEX/);
   assert.match(js,/cache:"no-store"/);
-  assert.match(js,/findPixeriaVideo\(data,training\.video\.url\)/);
+  assert.match(js,/findPixeriaVideo\(await response\.json\(\),training\.video\.url\)/);
   assert.match(js,/hasRequiredPixeriaTags\(agent\.id,item\)/);
   assert.match(js,/publicVideo && tagged/);
 });
 
 test("the import checks Pixeria first and never duplicates an existing YouTube source",()=>{
-  const dedupeCheck=js.indexOf("?dedupe=${Date.now()}");
+  const dedupeCheck=js.indexOf("const existing=await fetchPixeriaItem(training)");
   const importRequest=js.indexOf("fetch(PIXERIA_IMPORT");
   assert.ok(dedupeCheck >= 0 && importRequest > dedupeCheck);
-  assert.match(js,/const existing=A\.findPixeriaVideo/);
-  assert.match(js,/no se creó un duplicado/);
-  assert.match(js,/Comprueba Tailscale y el servicio \/admira\/tube/);
+  assert.match(js,/sin crear un duplicado/);
+  assert.match(js,/volver a comprobar sin duplicar la fuente/);
+});
+
+test("the browser uses same-origin brokers instead of the private-network Funnel",()=>{
+  assert.match(js,/PIXERIA_IMPORT = "\/api\/pixeria-import"/);
+  assert.match(js,/PIXERIA_STATUS = "\/api\/pixeria-status"/);
+  assert.match(js,/PIXERIA_TAGS = "\/api\/pixeria-tags"/);
+  assert.doesNotMatch(js,/tail48b61c\.ts\.net/);
+  assert.match(importProxySource,/macmini\.tail48b61c\.ts\.net\/admira\/tube\/import-to-stock/);
+  assert.match(importProxySource,/Sólo se admiten fuentes de YouTube/);
+  assert.match(statusProxySource,/macmini\.tail48b61c\.ts\.net\/admira\/tube\/status/);
+});
+
+test("the import path deduplicates, waits for the real job and repairs canonical tags",()=>{
+  assert.match(js,/const existing=await fetchPixeriaItem\(training\)/);
+  assert.match(js,/const attempts=poll \? 240 : 1/);
+  assert.match(js,/status\.state === "error"/);
+  assert.match(js,/await repairPixeriaTags\(item\)/);
+  assert.match(tagsProxySource,/STOCK_ORIGIN = "https:\/\/api\.admira\.store"/);
+  assert.match(tagsProxySource,/STOCK_ORIGIN}\/stock/);
+  assert.match(tagsProxySource,/tags:\["formacion",counselorTag\]/);
+});
+
+test("same-origin brokers reject malformed and cross-origin writes before upstream fetch",async()=>{
+  const importProxy=await moduleFromSource(importProxySource);
+  const tagsProxy=await moduleFromSource(tagsProxySource);
+  const missingOrigin=await importProxy.onRequestPost({request:new Request("https://admira.academy/api/pixeria-import",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"})});
+  assert.equal(missingOrigin.status,403);
+  const crossOrigin=await importProxy.onRequestPost({request:new Request("https://admira.academy/api/pixeria-import",{method:"POST",headers:{Origin:"https://example.com","Content-Type":"application/json"},body:"{}"})});
+  assert.equal(crossOrigin.status,403);
+  const badSource=await importProxy.onRequestPost({request:new Request("https://admira.academy/api/pixeria-import",{method:"POST",headers:{Origin:"https://admira.academy","Content-Type":"application/json"},body:JSON.stringify({url:"https://example.com/video",tags:["formacion","stevewozniak"]})})});
+  assert.equal(badSource.status,400);
+  const badTags=await tagsProxy.onRequestPost({request:new Request("https://admira.academy/api/pixeria-tags",{method:"POST",headers:{Origin:"https://admira.academy","Content-Type":"application/json"},body:JSON.stringify({id:"asset-123",tags:["random"]})})});
+  assert.equal(badTags.status,400);
 });
 
 test("the preview is unlocked only by a tagged item confirmed in the public index",()=>{
   const verifiedBranch=js.indexOf("if(publicVideo && tagged)");
   const pollingShowCall=js.indexOf("showVerifiedPreview(training.pixeria.item)",verifiedBranch);
   assert.ok(verifiedBranch >= 0 && pollingShowCall > verifiedBranch);
-  assert.match(js,/if\(existing\)[\s\S]*?const tagged=T\.hasRequiredPixeriaTags[\s\S]*?if\(tagged\) showVerifiedPreview/);
   assert.match(js,/function hidePreview\(\)/);
   assert.doesNotMatch(html,/id="video-metadata"[^>]*>[\s\S]*?<img/);
   assert.match(html,/El previo sólo aparece si el vídeo existe como activo público de Pixeria/);

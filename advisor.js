@@ -4,8 +4,9 @@
   const T = window.AcademyTrainingCore;
   if(!A) throw new Error("AcademyAdvisorCore no está disponible");
   if(!T) throw new Error("AcademyTrainingCore no está disponible");
-  const PIXERIA_IMPORT = "https://macmini.tail48b61c.ts.net/admira/tube/import-to-stock";
-  const PIXERIA_STATUS = "https://macmini.tail48b61c.ts.net/admira/tube/status";
+  const PIXERIA_IMPORT = "/api/pixeria-import";
+  const PIXERIA_STATUS = "/api/pixeria-status";
+  const PIXERIA_TAGS = "/api/pixeria-tags";
   const PIXERIA_INDEX = "https://pub-bf043a4daa3b43b7a0b769617729d074.r2.dev/stock/index.json";
   const STORAGE_KEY = "admira-academy-v1-progress";
   const $ = (selector,root=document) => root.querySelector(selector);
@@ -163,16 +164,11 @@
     $("#import-advisor-video").disabled=true;
     setNotice("#pixeria-verification-notice","Comprobando que la fuente no exista ya en Pixeria…");
     try{
-      const indexResponse=await fetch(`${PIXERIA_INDEX}?dedupe=${Date.now()}`,{cache:"no-store",headers:{Accept:"application/json"}});
-      if(!indexResponse.ok) throw new Error(`No se pudo comprobar el índice público (${indexResponse.status})`);
-      const existing=A.findPixeriaVideo(await indexResponse.json(),training.video.url);
+      const existing=await fetchPixeriaItem(training);
       if(existing){
-        const tagged=T.hasRequiredPixeriaTags(agent.id,existing);
-        training.pixeria={status:tagged ? "verified" : "imported_needs_tags",detail:tagged ? "La fuente ya existía y está correctamente etiquetada; no se creó un duplicado." : "La fuente ya existe, pero le faltan #formacion o la etiqueta canónica; no se creó un duplicado.",verifiedAt:new Date().toISOString(),item:{id:existing.id || existing.key || "",url:existing.url,title:existing.title || existing.name || training.video.title,thumbnail:existing.thumbnail || "",tags:existing.tags || []}};
-        T.transition(training,"pixeria",training.pixeria.status,training.pixeria.detail); saveAcademy();
-        setNotice("#pixeria-verification-notice",training.pixeria.detail,tagged ? "ok" : "error");
-        if(tagged) showVerifiedPreview(training.pixeria.item); else hidePreview();
-        renderHeader(); renderPeriods(); renderTimeline(); return;
+        training.pixeria={...(training.pixeria || {}),status:"processing",detail:"La fuente ya existe; verificando el activo sin crear un duplicado."}; saveAcademy();
+        setNotice("#pixeria-verification-notice",training.pixeria.detail);
+        await verifyPixeriaIndex(true,true); return;
       }
       setNotice("#pixeria-verification-notice","Fuente nueva: solicitando la importación etiquetada a Pixeria…");
       const response=await fetch(PIXERIA_IMPORT,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({url:training.video.url,format:"video",comment:T.buildPixeriaComment(agent.id,training.topic),tags:["formacion",T.role(agent.id).tag]})});
@@ -181,27 +177,47 @@
       training.pixeria={status:"processing",jobId:data.jobId || data.id || data.job_id || "",detail:"Importación aceptada; esperando el índice público.",requestedAt:new Date().toISOString()};
       T.transition(training,"pixeria","processing",training.pixeria.detail); saveAcademy();
       setNotice("#pixeria-verification-notice",training.pixeria.detail);
-      await verifyPixeriaIndex(true);
+      await verifyPixeriaIndex(true,true);
     }catch(error){
       const networkDetail=error instanceof TypeError && /fetch/i.test(String(error.message))
-        ? "No se pudo alcanzar el importador del Mac Mini. Comprueba Tailscale y el servicio /admira/tube antes de reintentar; no se ha asumido ninguna importación."
+        ? "No se pudo alcanzar el intermediario de importación. No se ha asumido ninguna importación; puedes volver a comprobar sin duplicar la fuente."
         : `Importación no confirmada: ${error.message}`;
       training.pixeria={...(training.pixeria || {}),status:"error",detail:networkDetail};
       T.transition(training,"pixeria","error",training.pixeria.detail); saveAcademy();
       setNotice("#pixeria-verification-notice",training.pixeria.detail,"error"); hidePreview();
     }finally{$("#import-advisor-video").disabled=!sourceReady(trainingFor());}
   }
-  async function verifyPixeriaIndex(poll=true){
+  async function fetchPixeriaItem(training){
+    const response=await fetch(`${PIXERIA_INDEX}?t=${Date.now()}`,{cache:"no-store",headers:{Accept:"application/json"}});
+    if(!response.ok) throw new Error(`índice ${response.status}`);
+    return A.findPixeriaVideo(await response.json(),training.video.url);
+  }
+  async function repairPixeriaTags(item){
+    const response=await fetch(PIXERIA_TAGS,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({id:item.id || item.key || "",tags:["formacion",T.role(agent.id).tag]})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(data.error || `etiquetas ${response.status}`);
+    return data;
+  }
+  async function verifyPixeriaIndex(poll=true,repairTags=false){
     const training=trainingFor(); if(!sourceReady(training)) return false;
     $("#verify-advisor-video").disabled=true; hidePreview();
-    const attempts=poll ? 6 : 1;
+    const attempts=poll ? 240 : 1;
+    let tagsRequested=false;
     for(let attempt=0;attempt<attempts;attempt+=1){
       try{
-        if(training.pixeria?.jobId) await fetch(`${PIXERIA_STATUS}?id=${encodeURIComponent(training.pixeria.jobId)}`,{headers:{Accept:"application/json"}}).catch(()=>null);
-        const response=await fetch(`${PIXERIA_INDEX}?t=${Date.now()}`,{cache:"no-store",headers:{Accept:"application/json"}});
-        if(!response.ok) throw new Error(`índice ${response.status}`);
-        const data=await response.json();
-        const item=A.findPixeriaVideo(data,training.video.url);
+        if(training.pixeria?.jobId){
+          const statusResponse=await fetch(`${PIXERIA_STATUS}?id=${encodeURIComponent(training.pixeria.jobId)}`,{headers:{Accept:"application/json"}}).catch(()=>null);
+          if(statusResponse?.ok){
+            const status=await statusResponse.json().catch(()=>({}));
+            if(status.state === "error" || status.status === "error"){
+              training.pixeria={...(training.pixeria || {}),status:"error",detail:`El importador no pudo procesar el vídeo: ${status.error || "error sin detalle"}.`};
+              T.transition(training,"pixeria","error",training.pixeria.detail); saveAcademy();
+              setNotice("#pixeria-verification-notice",training.pixeria.detail,"error");
+              $("#verify-advisor-video").disabled=false; return false;
+            }
+          }
+        }
+        const item=await fetchPixeriaItem(training);
         if(item){
           const publicVideo=item.type === "video" && (!item.mime || String(item.mime).startsWith("video/")) && /^https:\/\//.test(String(item.url || ""));
           const tagged=T.hasRequiredPixeriaTags(agent.id,item);
@@ -213,11 +229,26 @@
             setNotice("#pixeria-verification-notice",training.pixeria.detail,"ok"); showVerifiedPreview(training.pixeria.item);
             renderHeader(); renderPeriods(); renderTimeline(); $("#verify-advisor-video").disabled=false; return true;
           }
+          if(publicVideo && repairTags && !tagged){
+            if(!tagsRequested){
+              tagsRequested=true;
+              try{ await repairPixeriaTags(item); }
+              catch(error){
+                training.pixeria={...(training.pixeria || {}),status:"error",detail:`El activo existe, pero no se pudieron fijar sus etiquetas: ${error.message}.`};
+                T.transition(training,"pixeria","error",training.pixeria.detail); saveAcademy();
+                setNotice("#pixeria-verification-notice",training.pixeria.detail,"error");
+                $("#verify-advisor-video").disabled=false; return false;
+              }
+              setNotice("#pixeria-verification-notice","Activo público localizado; fijando las etiquetas canónicas…");
+            }else setNotice("#pixeria-verification-notice","Esperando que el índice público confirme las etiquetas canónicas…");
+            if(attempt < attempts - 1) await new Promise(resolve=>setTimeout(resolve,2000));
+            continue;
+          }
           training.pixeria={...(training.pixeria || {}),status:"imported_needs_tags",detail:publicVideo ? "El activo existe, pero aún no conserva #formacion y la etiqueta canónica del consejero." : "La entrada existe, pero no expone un vídeo público reproducible."};
           saveAcademy(); setNotice("#pixeria-verification-notice",training.pixeria.detail,"error");
-        }else setNotice("#pixeria-verification-notice",attempts > 1 ? `Procesando en Pixeria · comprobación ${attempt + 1}/${attempts}…` : "La fuente todavía no figura en el índice público de Pixeria.");
+        }else setNotice("#pixeria-verification-notice",attempts > 1 ? `Procesando en Pixeria · ${Math.min(8,Math.floor(attempt * 2 / 60))} min de 8…` : "La fuente todavía no figura en el índice público de Pixeria.");
       }catch(error){ setNotice("#pixeria-verification-notice",`No se pudo comprobar el índice público: ${error.message}.`,"error"); }
-      if(attempt < attempts - 1) await new Promise(resolve=>setTimeout(resolve,2500));
+      if(attempt < attempts - 1) await new Promise(resolve=>setTimeout(resolve,2000));
     }
     training.pixeria={...(training.pixeria || {}),status:training.pixeria?.status === "imported_needs_tags" ? "imported_needs_tags" : "pending_index",detail:training.pixeria?.status === "imported_needs_tags" ? training.pixeria.detail : "Importación solicitada; el activo aún no aparece en el índice público."};
     saveAcademy(); hidePreview(); $("#verify-advisor-video").disabled=false; return false;
