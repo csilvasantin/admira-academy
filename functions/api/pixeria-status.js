@@ -13,5 +13,3 @@ export async function onRequestGet({request}){
     return new Response(text,{status:upstream.status,headers:{"Content-Type":upstream.headers.get("Content-Type") || "application/json","Cache-Control":"no-store"}});
   }catch(error){ return json({ok:false,error:`Estado no disponible: ${error.message}`},502); }
 }
-
-export function onRequest(){ return json({ok:false,error:"Método no permitido"},405); }
