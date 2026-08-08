@@ -23,17 +23,24 @@
   <main>
     <section class="platform-hero">
       <div class="wrap hero-grid">
-        <div><p class="kicker">PLATAFORMA · CIERRE TRAZABLE</p><h1>El trabajo también ocupa <span>tiempo real.</span></h1><p>Registra cuánto se dedicó a una tarea, misión u objetivo. El cronómetro produce tiempo medido; la entrada manual queda declarada. Ninguno se convierte automáticamente en puntos.</p></div>
-        <div class="truth-card"><span>CONTRATO DE ESTA V1</span><strong>Sin tiempo, no hay cierre.</strong><ul><li>Medido ≠ auditado externamente</li><li>Manual ≠ verificado</li><li>Puntos ≠ Highscore hasta validar</li></ul></div>
+        <div><p class="kicker">PLATAFORMA · HERRAMIENTA DE CIERRE</p><h1>Tiempo, evidencia <span>y estado.</span></h1><p>Registra un cierre trazable sin confundir tiempo medido, tiempo declarado ni puntos pendientes.</p></div>
+        <span class="platform-state">8 sillas · persistencia local · sin escritura en Highscore</span>
       </div>
     </section>
 
     <section id="registro" class="platform-section">
       <div class="wrap platform-layout">
-        <div class="workbench">
-          <div class="section-head"><div><p class="kicker">01 · IDENTIDAD DEL TRABAJO</p><h2>Nuevo cierre</h2></div><span id="draft-state" class="state-pill">Incompleto</span></div>
+        <details class="tool-rail options-panel" open>
+          <summary>Opciones</summary>
+          <div class="rail-content">
+            <p class="rail-label">Consejero</p>
+            <div class="student-grid" id="student-grid" role="radiogroup" aria-label="Estudiante o consejero"></div>
+            <p class="rail-note">La silla identifica el cierre local. No atribuye puntos ni modifica el Consejo.</p>
+          </div>
+        </details>
 
-          <div class="student-grid" id="student-grid" role="radiogroup" aria-label="Estudiante o consejero"></div>
+        <div class="workbench">
+          <div class="section-head"><div><p class="kicker">HERRAMIENTA CENTRAL</p><h2>Nuevo cierre</h2></div><span id="draft-state" class="state-pill">Incompleto</span></div>
 
           <form id="closure-form" novalidate>
             <div class="form-grid">
@@ -67,11 +74,21 @@
           </form>
         </div>
 
-        <aside class="sync-panel" aria-labelledby="sync-title">
-          <p class="kicker">SINCRONIZACIÓN</p><h2 id="sync-title">Cola Yokup</h2><span class="sync-status">Pendiente · sin integración de escritura</span>
-          <p>La Academia no dispone de una ruta autenticada y verificable para publicar tiempos o puntuación. Los cierres se conservan localmente y no afectan Highscore.</p>
-          <dl><div><dt>Almacenamiento</dt><dd>Este navegador</dd></div><div><dt>Tiempo</dt><dd>Medido o declarado</dd></div><div><dt>Puntuación</dt><dd>No sincronizada</dd></div></dl>
-        </aside>
+        <details class="tool-rail sync-panel" open>
+          <summary>Avanzada</summary>
+          <div class="rail-content">
+            <p class="kicker">SINCRONIZACIÓN</p><h2 id="sync-title">Cola Yokup</h2><span class="sync-status">Pendiente · sin escritura</span>
+            <dl><div><dt>Almacenamiento</dt><dd>Este navegador</dd></div><div><dt>Tiempo</dt><dd>Medido o declarado</dd></div><div><dt>Puntuación</dt><dd>No sincronizada</dd></div></dl>
+          </div>
+        </details>
+
+        <details class="advanced-dock">
+          <summary>Modo avanzado <span>contrato, validación y límites</span></summary>
+          <div class="advanced-dock-grid">
+            <div class="truth-card"><span>CONTRATO DE ESTA V1</span><strong>Sin tiempo, no hay cierre.</strong><ul><li>Medido ≠ auditado externamente</li><li>Manual ≠ verificado</li><li>Puntos ≠ Highscore hasta validar</li></ul></div>
+            <div class="advanced-copy"><p class="kicker">LÍMITE OPERATIVO</p><p>Academy no dispone de una ruta autenticada y verificable para publicar tiempos o puntuación. Los cierres permanecen locales y no afectan Highscore.</p></div>
+          </div>
+        </details>
       </div>
     </section>
 

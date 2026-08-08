@@ -85,24 +85,35 @@
       <div class="wrap">
         <div class="academy-topline">
           <div>
-            <p class="kicker">02 · Elige el aula</p>
-            <h2 id="academy-title">¿Quién va a aprender?</h2>
+            <p class="kicker">02 · Herramienta de formación</p>
+            <h2 id="academy-title">Academia del Consejo</h2>
           </div>
-          <div class="audience-switch" role="group" aria-label="Tipo de agente">
-            <button class="active" type="button" aria-pressed="true" data-audience="silicio"><span>◆</span> Agentes de silicio</button>
-            <button type="button" aria-pressed="false" data-audience="carbono"><span>○</span> Agentes de carbono <small>próximamente</small></button>
-          </div>
+          <span class="workspace-state">8 sillas · fuentes públicas · trazabilidad local</span>
         </div>
 
+        <div class="admira-workspace">
+          <details class="tool-rail options-rail" open>
+            <summary>Opciones</summary>
+            <div class="rail-content">
+              <p class="rail-label">Tipo de agente</p>
+              <div class="audience-switch" role="group" aria-label="Tipo de agente">
+                <button class="active" type="button" aria-pressed="true" data-audience="silicio"><span>◆</span> Silicio</button>
+                <button type="button" aria-pressed="false" data-audience="carbono"><span>○</span> Carbono <small>próximamente</small></button>
+              </div>
+              <p class="rail-label">Filtrar sillas</p>
+              <div class="filters" role="group" aria-label="Filtrar sillas">
+                <button class="active" type="button" data-filter="all">Todas</button>
+                <button type="button" data-filter="racional">Racionales</button>
+                <button type="button" data-filter="creativo">Creativas</button>
+              </div>
+            </div>
+          </details>
+
+          <div class="tool-canvas">
         <div id="consejo" class="catalog-header">
           <div>
             <p class="catalog-label">Consejo de AdmiraNeXT</p>
-            <p>Ocho estudiantes del Consejo. Consulta su ficha o abre «Formación» para preparar un paquete trazable.</p>
-          </div>
-          <div class="filters" role="group" aria-label="Filtrar sillas">
-            <button class="active" type="button" data-filter="all">Todas</button>
-            <button type="button" data-filter="racional">Racionales</button>
-            <button type="button" data-filter="creativo">Creativas</button>
+            <p>Elige una silla y opera su formación.</p>
           </div>
         </div>
 
@@ -176,7 +187,7 @@
               <p class="mini-label">2 · Buscar y revisar una fuente real</p>
               <p>Academy abre una búsqueda pública de YouTube. Elige allí un resultado y pega su URL; no se muestran resultados inventados.</p>
               <div class="inline-actions">
-                <a class="button small quiet disabled" id="youtube-search" href="#" target="_blank" rel="noopener" aria-disabled="true">Buscar en YouTube ↗</a>
+                <a class="button small primary" id="youtube-search" href="#" target="_blank" rel="noopener" aria-disabled="false">Buscar información ↗</a>
               </div>
               <label class="field"><span>URL del vídeo elegido</span><input id="video-url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=…"></label>
               <button class="button small primary" id="review-video" type="button">Revisar fuente</button>
@@ -214,8 +225,25 @@
           </details>
           <div class="academy-disclaimer" role="note"><span aria-hidden="true">◇</span><p><strong>Sin atribución automática.</strong> Esta herramienta no concede aprendizaje, certificaciones ni puntos. La actividad sólo se puntúa por el flujo canónico de Yokup y con identidad verificada.</p></div>
         </section>
+          </div>
 
-        <section id="itinerario" class="journey" aria-labelledby="journey-title">
+          <details class="tool-rail advanced-rail" open>
+            <summary>Avanzada</summary>
+            <div class="rail-content">
+              <p class="rail-label">Estado de integraciones</p>
+              <dl class="rail-facts">
+                <div><dt>Fuentes</dt><dd>YouTube público · revisión manual</dd></div>
+                <div><dt>Pixeria</dt><dd>Sólo con consentimiento y verificación</dd></div>
+                <div><dt>Consejo</dt><dd>Paquete local; entrega completa pendiente</dd></div>
+                <div><dt>Puntos</dt><dd>Fuera de Academy; sólo Yokup verificado</dd></div>
+              </dl>
+              <a class="rail-link" href="https://www.yokup.com/misiones" target="_blank" rel="noopener">Abrir misiones Yokup ↗</a>
+            </div>
+          </details>
+
+          <details class="advanced-dock">
+            <summary>Modo avanzado <span>itinerario, evidencia y validación</span></summary>
+            <section id="itinerario" class="journey" aria-labelledby="journey-title">
           <div class="journey-head">
             <div>
               <p class="kicker">04 · Itinerario inicial</p>
@@ -235,7 +263,9 @@
             <span aria-hidden="true">◇</span>
             <p><strong>Completar no acredita.</strong> Esta v1 registra práctica y evidencia local. Una revisión externa y una fuente canónica serán necesarias antes de afirmar que un agente está preparado.</p>
           </div>
-        </section>
+            </section>
+          </details>
+        </div>
       </div>
     </section>
 

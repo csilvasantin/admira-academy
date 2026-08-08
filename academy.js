@@ -36,10 +36,10 @@
     try{
       const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if(parsed && parsed.records){
-        return { version:2, selected:parsed.selected || "ceo", records:parsed.records, trainings:parsed.trainings || {} };
+        return { version:3, selected:parsed.selected || "ceo", records:parsed.records, trainings:parsed.trainings || {}, topicDrafts:parsed.topicDrafts || {} };
       }
     }catch(_error){}
-    return { version:2, selected:"ceo", records:{}, trainings:{} };
+    return { version:3, selected:"ceo", records:{}, trainings:{}, topicDrafts:{} };
   }
   function saveState(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -50,6 +50,15 @@
     return state.records[agentId];
   }
   function trainingFor(agentId=state.selected){ return state.trainings[agentId] || null; }
+  function topicDraft(agentId=state.selected){
+    return state.topicDrafts[agentId]?.value || trainingFor(agentId)?.topic || T.defaultTopic(agentId);
+  }
+  function saveTopicDraft(source="manual"){
+    const value = $("#training-topic").value.trim();
+    state.topicDrafts[state.selected] = { value, source, updatedAt:new Date().toISOString() };
+    saveState();
+    setLink($("#youtube-search"), value ? T.youtubeSearchUrl(state.selected, value) : "");
+  }
   function completedCount(agentId){ return LESSONS.filter(lesson => recordFor(agentId).lessons[lesson.id]?.complete === true).length; }
   function statusFor(agentId){
     const count = completedCount(agentId);
@@ -142,6 +151,7 @@
     T.transition(training, stage, status, detail); saveState(); renderTrainingTrace(training);
   }
   function beginTraining(topic, validation){
+    state.topicDrafts[state.selected] = { value:topic, source:state.topicDrafts[state.selected]?.source || "manual", updatedAt:new Date().toISOString() };
     let training = trainingFor();
     if(!training || training.topic !== topic){
       training = T.createTraining(state.selected, topic);
@@ -167,8 +177,19 @@
 
   function proposeTopic(){
     $("#training-topic").value = T.proposeTopic(state.selected);
+    saveTopicDraft("propuesto");
     $("#topic-override").checked = false;
     validateTopic();
+  }
+
+  function searchInformation(event){
+    saveTopicDraft(state.topicDrafts[state.selected]?.source || "manual");
+    const training = validateTopic();
+    if(!training){ event.preventDefault(); return; }
+    const url = T.youtubeSearchUrl(state.selected, training.topic);
+    setLink(event.currentTarget, url);
+    recordTransition(training, "fuentes", "búsqueda abierta", "Búsqueda pública de YouTube abierta; resultado pendiente de selección y revisión manual.");
+    setNotice("#video-notice", "Búsqueda pública abierta. Elige un resultado en YouTube, vuelve y pega su URL para revisarlo.", "pending");
   }
 
   async function reviewVideo(){
@@ -288,9 +309,10 @@
     $("#training-role").textContent = agent.role;
     $("#training-area").textContent = `Área: ${role.area}.`;
     $("#training-state").textContent = training ? (training.delivery?.status === "handoff_opened" ? "Entrega parcial · paquete pendiente" : "Formación en curso") : "Sin iniciar";
-    $("#training-topic").value = training?.topic || "";
+    const draft = topicDraft(agent.id);
+    $("#training-topic").value = draft;
     $("#topic-override").checked = false; $("#topic-override-wrap").hidden = true;
-    setLink($("#youtube-search"), training ? T.youtubeSearchUrl(agent.id, training.topic) : "");
+    setLink($("#youtube-search"), draft ? T.youtubeSearchUrl(agent.id, draft) : "");
     $("#video-url").value = training?.video?.url || "";
     const card = $("#video-card");
     if(training?.video){
@@ -338,6 +360,8 @@
   }));
   $("#validate-topic").addEventListener("click", validateTopic);
   $("#propose-topic").addEventListener("click", proposeTopic);
+  $("#training-topic").addEventListener("input", () => saveTopicDraft("manual"));
+  $("#youtube-search").addEventListener("click", searchInformation);
   $("#review-video").addEventListener("click", reviewVideo);
   $("#import-pixeria").addEventListener("click", importPixeria);
   $("#create-script").addEventListener("click", createScript);

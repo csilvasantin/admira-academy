@@ -38,6 +38,19 @@ test("proposed topics are always role-specific", () => {
   for (const id of Object.keys(core.ROLES)) assert.equal(core.validateTopic(id, core.proposeTopic(id, () => 0)).relevant, true);
 });
 
+test("every Council role has an explicit useful default topic", () => {
+  assert.match(core.defaultTopic("cto"), /tecnología y arquitectura/i);
+  assert.match(core.defaultTopic("cfo"), /finanzas/i);
+  assert.match(core.defaultTopic("coo"), /operaciones/i);
+  assert.match(core.defaultTopic("ceo"), /dirección, producto/i);
+  for (const id of Object.keys(core.ROLES)) {
+    assert.ok(core.defaultTopic(id).length > 20);
+    assert.equal(core.validateTopic(id, core.defaultTopic(id)).relevant, true);
+  }
+  assert.match(js, /topicDrafts/);
+  assert.match(js, /addEventListener\("input", \(\) => saveTopicDraft\("manual"\)\)/);
+});
+
 test("YouTube discovery is public and selection must be a real reviewable URL", () => {
   const search = core.youtubeSearchUrl("cto", "Arquitectura segura");
   assert.match(search, /^https:\/\/www\.youtube\.com\/results\?search_query=/);
@@ -46,6 +59,17 @@ test("YouTube discovery is public and selection must be a real reviewable URL", 
   assert.match(js, /youtube\.com\/oembed/);
   assert.match(js, /const requestedUrl = \$\("#video-url"\)\.value;[\s\S]*canonicalYouTubeUrl\(requestedUrl\)/);
   assert.match(js, /no continuar.+resultado inventado/i);
+  assert.match(html, />Buscar información ↗</);
+  assert.match(js, /"fuentes", "búsqueda abierta"/);
+});
+
+test("the AdmiraNeXT shell prioritizes the tool and exposes collapsible controls", () => {
+  assert.match(html, /class="admira-workspace"/);
+  assert.match(html, /<summary>Opciones<\/summary>/);
+  assert.match(html, /<summary>Avanzada<\/summary>/);
+  assert.match(html, /<summary>Modo avanzado/);
+  assert.match(css, /grid-template-columns:176px minmax\(0,1fr\) 210px/);
+  assert.match(css, /\.tool-rail:not\(\[open\]\)/);
 });
 
 test("Pixeria requires consent and stays pending unless its public index verifies the item", () => {

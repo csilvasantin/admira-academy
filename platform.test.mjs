@@ -52,9 +52,18 @@ test("a valid closure traces person, work, time, evidence and unverified points"
 
 test("points and Yokup synchronization are explicitly non-authoritative",()=>{
   assert.match(html,/Academy no escribe ni modifica Highscore/);
-  assert.match(html,/Pendiente · sin integración de escritura/);
+  assert.match(html,/Pendiente · sin escritura/);
   assert.match(js,/Sincronización Yokup pendiente/);
   assert.doesNotMatch(js,/fetch\([^)]*highscore/i);
+});
+
+test("the time platform uses the same AdmiraNeXT tool shell",()=>{
+  assert.match(html,/<summary>Opciones<\/summary>/);
+  assert.match(html,/<summary>Avanzada<\/summary>/);
+  assert.match(html,/<summary>Modo avanzado/);
+  assert.match(html,/id="student-grid"[\s\S]*id="closure-form"/);
+  assert.match(css,/grid-template-columns:180px minmax\(0,1fr\) 218px/);
+  assert.match(css,/\.advanced-dock\{grid-column:1\/-1/);
 });
 
 test("the platform persists real local state and renders history",()=>{
