@@ -21,6 +21,7 @@ test("the catalog contains exactly the eight Council students and a training act
   assert.deepEqual(Object.keys(core.ROLES), ["ceo","cto","coo","cfo","cco","cdo","cxo","cso"]);
   for (const role of ["CEO","CTO","COO","CFO","CCO","CDO","CXO","CSO"]) assert.match(js, new RegExp(`role:\"${role}\"`));
   assert.match(js, /data-training-agent/);
+  assert.match(js, /\/consejeros\/\?id=\$\{agent\.id\}/);
   assert.match(js, />Formación\$\{/);
 });
 
@@ -143,8 +144,9 @@ test("each training keeps source, integration states, delivery and timestamped t
 test("v1 progress, carbon separation and the secondary avatar remain intact", () => {
   assert.match(js, /text\.length < 24/);
   assert.match(js, /if\(!confirmed\)/);
-  assert.match(html, /Agentes de carbono — próximamente/);
-  assert.match(js, /fase futura, sin progreso simulado/);
+  assert.match(html, /Agentes de carbono — detalle separado/);
+  assert.match(html, /audiencia=carbono/);
+  assert.match(js, /\/consejeros\/\?id=\$\{state\.selected\}&audiencia=carbono/);
   assert.match(html, /href="https:\/\/digitalavatar\.ai\/"/);
 });
 

@@ -73,7 +73,7 @@
     if(!training) return null;
     if(!T.validateMaxDuration(training.maxDurationMinutes).valid) training.maxDurationMinutes = maxDurationDraft(training.agentId);
     if(!training.search) training.search = { status:"not_started", query:T.youtubeSearchQuery(training.agentId,training.topic), url:T.youtubeSearchUrl(training.agentId,training.topic), detail:"Pendiente de iniciar la búsqueda pública.", updatedAt:training.updatedAt || training.createdAt };
-    if(training.video && !training.video.durationStatus){ training.video.durationStatus = "pending"; training.video.durationSeconds = null; training.video.durationSource = "oEmbed no aporta duración"; }
+    if(training.video && !training.video.durationStatus){ training.video.durationStatus = "pending"; training.video.durationSeconds = null; training.video.durationSource = "oEmbed no publica la duración"; }
     return training;
   }
   function sourceReady(training){ return Boolean(training?.video && training.video.durationStatus === "compatible"); }
@@ -118,7 +118,7 @@
           <h3>${agent.role}</h3><p>${escapeHtml(T.role(agent.id).area)}</p>
           <span class="agent-card-footer"><span>${agent.side}</span><b>${done ? `${done}/4 · en formación` : "sin evaluar"}</b></span>
         </button>
-        <button class="agent-training" type="button" data-training-agent="${agent.id}">Formación${training ? " · en curso" : ""} <span aria-hidden="true">↘</span></button>
+        <div class="agent-actions"><a class="agent-detail" href="/consejeros/?id=${agent.id}&amp;audiencia=silicio">Ver detalle</a><button class="agent-training" type="button" data-training-agent="${agent.id}">Formación${training ? " · en curso" : ""} <span aria-hidden="true">↘</span></button></div>
       </article>`;
     }).join("");
     $$('[data-agent]', grid).forEach(button => button.addEventListener("click", () => selectAgent(button.dataset.agent, false)));
@@ -486,7 +486,7 @@
   $$("[data-audience]").forEach(button => button.addEventListener("click", () => {
     const isSilicon = button.dataset.audience === "silicio";
     $$("[data-audience]").forEach(item => { const active = item === button; item.classList.toggle("active", active); item.setAttribute("aria-pressed", String(active)); });
-    if(!isSilicon){ $("#carbono").scrollIntoView({behavior:"smooth"}); showToast("Agentes de carbono: fase futura, sin progreso simulado."); }
+    if(!isSilicon){ location.href = `/consejeros/?id=${state.selected}&audiencia=carbono`; }
   }));
   $("#validate-topic").addEventListener("click", validateTopic);
   $("#propose-topic").addEventListener("click", proposeTopic);

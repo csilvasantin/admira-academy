@@ -115,8 +115,8 @@ section{scroll-margin-top:78px}
 .agent-card p{margin-bottom:18px;color:var(--muted);font-size:12px}
 .agent-card-footer{display:flex;justify-content:space-between;align-items:center;font:9px var(--mono);color:var(--dim);text-transform:uppercase;letter-spacing:.07em}
 .agent-card-footer b{color:var(--tone);font-weight:600}
-.agent-training{position:relative;z-index:2;width:calc(100% - 28px);margin:0 14px 14px;padding:9px 11px;border:1px solid color-mix(in srgb,var(--tone) 45%,transparent);border-radius:8px;background:color-mix(in srgb,var(--tone) 7%,transparent);color:var(--tone);cursor:pointer;font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase}
-.agent-training:hover{background:color-mix(in srgb,var(--tone) 14%,transparent)}
+.agent-actions{position:relative;z-index:2;display:grid;grid-template-columns:auto 1fr;gap:6px;margin:0 14px 14px}.agent-detail,.agent-training{display:flex;align-items:center;justify-content:center;margin:0;padding:9px 10px;border:1px solid color-mix(in srgb,var(--tone) 45%,transparent);border-radius:8px;background:color-mix(in srgb,var(--tone) 7%,transparent);color:var(--tone);cursor:pointer;font:9px var(--mono);letter-spacing:.06em;text-transform:uppercase}.agent-detail{border-color:var(--line);color:var(--muted)}
+.agent-training:hover,.agent-detail:hover{background:color-mix(in srgb,var(--tone) 14%,transparent)}
 
 .agent-profile{border:1px solid var(--line-strong);border-radius:18px;background:linear-gradient(135deg,rgba(255,215,106,.04),rgba(168,140,255,.06));overflow:hidden}
 .profile-head{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:30px;border-bottom:1px solid var(--line)}
