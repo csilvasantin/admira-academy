@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>admira.academy — Tutoriales de la suite + un avatar que resuelve tus dudas</title>
+<meta name="description" content="admira.academy es la academia de AdmiraNeXT: todos los tutoriales de la suite (admira.studio, admira.tv, XpaceOS, admira.app) y un avatar digital que responde tus dudas al instante, por voz o texto.">
+<meta property="og:title" content="admira.academy — Tutoriales + avatar que resuelve dudas">
+<meta property="og:description" content="Todos los tutoriales de la suite y un avatar digital (digitalavatar.ai) que resuelve cualquier duda al instante.">
+<meta property="og:url" content="https://admira.academy">
+<meta name="theme-color" content="#0a0c12">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  :root{
+    --bg:#0a0c12;--bg2:#141826;--card:#12162099;--card2:#161b2b;
+    --ink:#f0e6ff;--mut:rgba(216,200,255,.66);--dim:rgba(216,200,255,.40);
+    --amber:#ffd866;   /* Admira · paraguas / academia */
+    --violet:#aa88ff;  /* admira.studio */
+    --magenta:#ff4488; /* admira.tv */
+    --cyan:#50c8ff;    /* XpaceOS */
+    --green:#8bd450;   /* admira.app */
+    --line:rgba(170,136,255,.22);--line2:rgba(255,216,102,.30);
+    --sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:var(--amber);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  .mono{font-family:var(--mono)}
+
+  /* Header */
+  header{position:sticky;top:0;z-index:20;background:rgba(10,12,18,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  header .wrap{display:flex;align-items:center;gap:22px;min-height:64px;flex-wrap:wrap}
+  .brand{display:inline-flex;align-items:baseline;gap:2px;font-weight:800;font-size:19px;letter-spacing:-.01em;color:var(--ink)}
+  .brand:hover{text-decoration:none}
+  .brand .dot{color:var(--amber)}
+  .brand .u{color:var(--amber)}
+  nav.main{margin-left:auto;display:flex;gap:20px;font-size:13px;flex-wrap:wrap;align-items:center}
+  nav.main a{color:var(--mut)}
+  nav.main a:hover{color:var(--ink)}
+  .nav-cta{padding:8px 16px;border:1px solid var(--line2);border-radius:var(--r,8px);color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+  .nav-cta:hover{background:rgba(255,216,102,.08);text-decoration:none}
+
+  /* Hero */
+  .hero{position:relative;overflow:hidden;padding:70px 0 78px;border-bottom:1px solid var(--line)}
+  .hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 12% -10%,rgba(255,216,102,.14),transparent 46%),
+              radial-gradient(ellipse at 88% 8%,rgba(170,136,255,.14),transparent 44%),
+              radial-gradient(ellipse at 60% 120%,rgba(80,200,255,.10),transparent 50%)}
+  .hero .wrap{position:relative}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);border:1px solid var(--line2);border-radius:999px;padding:6px 14px;margin-bottom:22px}
+  .hero h1{font-size:58px;line-height:1.03;letter-spacing:-.02em;font-weight:800;margin:0 0 20px;max-width:15ch}
+  .hero h1 .grad{background:linear-gradient(90deg,var(--amber),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p.lede{font-size:19px;color:var(--mut);max-width:60ch;margin:0 0 30px}
+  .ctas{display:flex;gap:12px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:13px 24px;border-radius:9px;font-weight:700;font-size:14px;letter-spacing:.02em}
+  .btn.primary{background:var(--amber);color:#231a00}
+  .btn.primary:hover{background:#ffe08a;text-decoration:none}
+  .btn.ghost{border:1px solid var(--line);color:var(--ink)}
+  .btn.ghost:hover{border-color:var(--violet);text-decoration:none}
+  .hero-stats{display:flex;gap:34px;flex-wrap:wrap;margin-top:44px;font-family:var(--mono)}
+  .hero-stats .s .v{font-size:26px;font-weight:800;color:var(--ink)}
+  .hero-stats .s .l{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.12em}
+
+  section{padding:74px 0;border-bottom:1px solid var(--line)}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--violet);margin:0 0 12px}
+  h2{font-size:32px;letter-spacing:-.01em;margin:0 0 14px}
+  .sec-lede{color:var(--mut);font-size:16px;max-width:70ch;margin:0 0 34px}
+
+  /* Tracks */
+  .tracks{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .track{position:relative;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;overflow:hidden;transition:transform .14s,border-color .14s}
+  .track::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c)}
+  .track:hover{transform:translateY(-4px);border-color:var(--c)}
+  .track .tnum{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.1em}
+  .track .ger{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--c);font-weight:700}
+  .track h3{margin:0;font-size:21px;color:var(--ink)}
+  .track .who{font-size:12px;color:var(--dim)}
+  .track p{margin:0;color:var(--mut);font-size:14px}
+  .track ul{margin:2px 0 0;padding-left:16px;color:var(--mut);font-size:13px}
+  .track ul li{margin-bottom:5px}
+  .track .meta{margin-top:auto;padding-top:10px;font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;justify-content:space-between;border-top:1px solid var(--line)}
+  .track .meta a{color:var(--green)}
+  .track .meta .soon{color:var(--dim)}
+
+  /* Tutorial destacado (real) */
+  .featured{background:var(--card2);border:1px solid var(--line2);border-radius:16px;padding:26px;margin-bottom:26px;display:grid;grid-template-columns:1.15fr .85fr;gap:28px;align-items:start}
+  .featured .badge-live{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);border:1px solid rgba(139,212,80,.4);border-radius:999px;padding:4px 10px;margin-bottom:12px}
+  .featured .dotg{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+  .featured h3{margin:0 0 8px;font-size:23px;color:var(--ink)}
+  .featured .fdesc{color:var(--mut);font-size:14px;margin:0 0 16px}
+  .featured ol.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+  .featured ol.steps li{color:var(--mut);font-size:13px;display:flex;gap:8px;align-items:baseline}
+  .featured ol.steps li b{font-family:var(--mono);font-size:11px;color:var(--cyan)}
+  .featured .side{border-left:1px solid var(--line);padding-left:24px}
+  .featured .side .mrow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--mut)}
+  .featured .side .mrow:last-of-type{border-bottom:0}
+  .featured .side .mrow b{color:var(--ink);font-weight:600}
+  .featured .side .btn{margin-top:16px;width:100%;justify-content:center}
+
+  /* Avatar */
+  #avatar{background:linear-gradient(180deg,transparent,rgba(255,216,102,.05),transparent)}
+  .avatar-grid{display:grid;grid-template-columns:1.02fr .98fr;gap:30px;align-items:center}
+  .ask{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+  .ask input{flex:1;min-width:220px;padding:13px 16px;border:1px solid var(--line);background:var(--card2);color:var(--ink);border-radius:10px;font:15px var(--sans)}
+  .ask input:focus{outline:none;border-color:var(--amber)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .chip{font-family:var(--mono);font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+  .avatar-stage{position:relative;border:1px solid var(--line2);border-radius:16px;overflow:hidden;background:#0d0f18;aspect-ratio:4/3;box-shadow:0 12px 32px rgba(0,0,0,.5)}
+  .avatar-stage iframe{position:relative;z-index:1;width:100%;height:100%;border:0;display:block}
+  .avatar-stage .frame-fallback{position:absolute;z-index:0;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px;color:var(--mut);font-family:var(--mono);font-size:13px}
+  .avatar-stage .badge-live{position:absolute;top:12px;left:12px;z-index:2;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);background:rgba(10,12,18,.72);border:1px solid rgba(139,212,80,.4);border-radius:999px;padding:4px 10px}
+
+  /* Contraste así no / así sí */
+  .contrast{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .contrast .col{border:1px solid var(--line);border-radius:14px;padding:24px}
+  .contrast .col.no{background:rgba(255,68,136,.04);border-color:rgba(255,68,136,.25)}
+  .contrast .col.yes{background:rgba(139,212,80,.05);border-color:rgba(139,212,80,.3)}
+  .contrast .col h3{margin:0 0 12px;font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase}
+  .contrast .col.no h3{color:var(--magenta)}
+  .contrast .col.yes h3{color:var(--green)}
+  .contrast .col ul{margin:0;padding:0;list-style:none}
+  .contrast .col li{padding:9px 0;border-top:1px solid var(--line);color:var(--mut);font-size:14px;display:flex;gap:10px;align-items:baseline}
+  .contrast .col li:first-of-type{border-top:0}
+  .contrast .col li::before{font-family:var(--mono);font-weight:700}
+  .contrast .col.no li::before{content:"✕";color:var(--magenta)}
+  .contrast .col.yes li::before{content:"✓";color:var(--green)}
+
+  /* Encargos reales */
+  .projects{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .proj{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:11px;border-top:3px solid var(--c)}
+  .proj .pk{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
+  .proj h3{margin:0;font-size:18px;color:var(--ink)}
+  .proj p{margin:0;color:var(--mut);font-size:14px}
+  .proj .stack{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:12px}
+  .proj .tag{font-family:var(--mono);font-size:10px;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+
+  /* Método */
+  .method{background:linear-gradient(180deg,transparent,rgba(170,136,255,.04),transparent)}
+  .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:14px;margin-top:8px}
+  .flow .step{padding:10px 16px;border:1px solid var(--line);border-radius:999px;background:var(--card2)}
+  .flow .step b{color:var(--ink)}
+  .flow .arw{color:var(--amber)}
+
+  /* Certificación */
+  .certs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .cert{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:26px;text-align:left}
+  .cert .badge-ic{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;font-size:22px;margin-bottom:14px;background:rgba(255,216,102,.1);border:1px solid var(--line2)}
+  .cert h3{margin:0 0 6px;font-size:19px}
+  .cert p{margin:0;color:var(--mut);font-size:14px}
+  .cert .lvl{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.12em;text-transform:uppercase;margin-top:12px}
+
+  /* Para quién */
+  .aud{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .aud .a{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:20px}
+  .aud .a .ic{font-size:22px}
+  .aud .a h4{margin:8px 0 4px;font-size:15px}
+  .aud .a p{margin:0;color:var(--mut);font-size:13px}
+
+  /* CTA final */
+  .final{text-align:center;border-bottom:0}
+  .final h2{font-size:34px}
+  .final p{color:var(--mut);max-width:56ch;margin:0 auto 26px}
+
+  footer{padding:40px 0;font-size:13px;color:var(--dim)}
+  footer .wrap{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  footer .sig{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.1em}
+  footer a{color:var(--mut)}
+
+  @media (max-width:900px){
+    .tracks{grid-template-columns:1fr 1fr}
+    .certs{grid-template-columns:1fr}
+    .aud{grid-template-columns:1fr 1fr}
+    .avatar-grid{grid-template-columns:1fr}
+    .projects{grid-template-columns:1fr 1fr}
+    .featured{grid-template-columns:1fr}
+    .featured .side{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:16px}
+  }
+  @media (max-width:620px){
+    .hero h1{font-size:40px}
+    .tracks{grid-template-columns:1fr}
+    .aud{grid-template-columns:1fr}
+    .contrast{grid-template-columns:1fr}
+    .projects{grid-template-columns:1fr}
+    .featured ol.steps{grid-template-columns:1fr}
+    nav.main{gap:14px;font-size:12px}
+  }
+</style>
+</head>
+<body id="top">
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#top">admira<span class="dot">.</span><span class="u">academy</span></a>
+    <nav class="main">
+      <a href="#tutoriales">Tutoriales</a>
+      <a href="#avatar">Avatar</a>
+      <a href="#metodo">Método</a>
+      <a href="#certificacion">Certificación</a>
+      <a class="nav-cta" href="#avatar">Pregunta al avatar</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <span class="eyebrow">◆ Academia oficial · AdmiraNeXT</span>
+    <h1>Aprende <span class="grad">operando la suite real</span>, no leyendo manuales.</h1>
+    <p class="lede">En admira.academy no hay teoría suelta: cada tutorial es un <b>encargo real</b> sobre admira.studio, admira.tv, XpaceOS y admira.app. ¿Te atascas? Un <b>avatar digital</b> te lo resuelve al instante, por voz o texto — como tener a un formador de Admira 24/7.</p>
+    <div class="ctas">
+      <a class="btn primary" href="#tutoriales">Ver tutoriales →</a>
+      <a class="btn ghost" href="#avatar">Pregunta al avatar</a>
+    </div>
+    <div class="hero-stats">
+      <div class="s"><div class="v">4</div><div class="l">áreas · toda la suite</div></div>
+      <div class="s"><div class="v">1</div><div class="l">avatar que resuelve dudas 24/7</div></div>
+      <div class="s"><div class="v">1</div><div class="l">método de punta a punta</div></div>
+    </div>
+  </div>
+</div>
+
+<section id="porque">
+  <div class="wrap">
+    <p class="kicker">Por qué así</p>
+    <h2>Los manuales no montan tiendas</h2>
+    <p class="sec-lede">Un curso normal te da teoría que caduca y un certificado que no opera nada. Aquí aprendes sobre el producto real, publicando encargos de verdad, con ayuda al instante.</p>
+    <div class="contrast">
+      <div class="col no">
+        <h3>Una academia normal</h3>
+        <ul>
+          <li>Teoría genérica y diapositivas</li>
+          <li>Vídeos que caducan cada versión</li>
+          <li>Esperas días al soporte</li>
+          <li>Un diploma que no despliega nada</li>
+        </ul>
+      </div>
+      <div class="col yes">
+        <h3>admira.academy</h3>
+        <ul>
+          <li>El producto real de la suite, en vivo</li>
+          <li>Encargos que publicas de verdad</li>
+          <li>Un avatar que responde al instante</li>
+          <li>Una credencial que habilita a desplegar</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="programa">
+  <div class="wrap">
+    <p class="kicker">El programa</p>
+    <h2>Una cadena, cuatro competencias</h2>
+    <p class="sec-lede">La suite AdmiraNeXT convierte cualquier espacio físico en un medio inteligente. admira.academy te forma en cada eslabón de esa cadena y en cómo encajan: del encargo creativo a la impresión publicitaria medida. No enseñamos herramientas sueltas — enseñamos a operar el sistema completo.</p>
+    <div class="flow">
+      <span class="step"><b>admira.studio</b> crea</span><span class="arw">→</span>
+      <span class="step"><b>admira.tv</b> emite</span><span class="arw">→</span>
+      <span class="step"><b>XpaceOS</b> distribuye</span><span class="arw">→</span>
+      <span class="step"><b>admira.app</b> comercializa</span>
+    </div>
+  </div>
+</section>
+
+<section id="tutoriales">
+  <div class="wrap">
+    <p class="kicker">Los tutoriales</p>
+    <h2>Empieza por el tutorial en vivo</h2>
+    <p class="sec-lede">El primer tutorial completo ya está publicado sobre el producto real. Los demás se van sumando por producto — y si te atascas en cualquiera, el avatar te lo explica.</p>
+
+    <div class="featured">
+      <div class="fmain">
+        <span class="badge-live"><span class="dotg"></span>Tutorial en vivo</span>
+        <h3>Target Model — de paso de personas a inventario vendible</h3>
+        <p class="fdesc">El tutorial operativo de XpaceOS: modela la audiencia por hora, calibra las superficies visibles y publica reglas para vender campañas segmentadas. Seis pasos, de principio a fin, sobre el backoffice real.</p>
+        <ol class="steps">
+          <li><b>01</b> Selecciona circuito y Xpacio</li>
+          <li><b>02</b> Modela personas por hora</li>
+          <li><b>03</b> Ajusta la tipología</li>
+          <li><b>04</b> Calibra inventario visible</li>
+          <li><b>05</b> Simula la campaña</li>
+          <li><b>06</b> Publica reglas en XpaceOS</li>
+        </ol>
+      </div>
+      <div class="side">
+        <div class="mrow"><span>Personas/hora</span><b>volumen base</b></div>
+        <div class="mrow"><span>Audiencia útil</span><b>% match</b></div>
+        <div class="mrow"><span>Impresiones</span><b>visibilidad·dwell</b></div>
+        <div class="mrow"><span>Revenue</span><b>CPM·cobertura</b></div>
+        <a class="btn primary" href="https://admira.app/tutorial/" target="_blank" rel="noopener">Abrir el tutorial →</a>
+      </div>
+    </div>
+
+    <p class="kicker" style="margin-top:8px">Por producto</p>
+    <div class="tracks">
+      <div class="track" style="--c:var(--violet)">
+        <div class="tnum">TRACK 01</div>
+        <div class="ger">Creando</div>
+        <h3>admira.studio</h3>
+        <div class="who">Creativos · marca · operadores de tienda</div>
+        <p>Genera audio, música, imagen y vídeo con IA listos para cartelería, desde un encargo estructurado.</p>
+        <ul>
+          <li>Encargos por tipología</li>
+          <li>Motores: Suno, Veo, FLUX, ElevenLabs</li>
+          <li>Del prompt al activo publicable</li>
+        </ul>
+        <div class="meta"><span class="soon">En preparación</span><span>Básico</span></div>
+      </div>
+      <div class="track" style="--c:var(--magenta)">
+        <div class="tnum">TRACK 02</div>
+        <div class="ger">Emitiendo</div>
+        <h3>admira.tv</h3>
+        <div class="who">Programadores de parrilla · retail media</div>
+        <p>Pon el contenido en antena sobre la red de pantallas: parrilla compartida y programación por superficie.</p>
+        <ul>
+          <li>Parrilla y calendario de emisión</li>
+          <li>Programación por superficie</li>
+          <li>Canal DOOH en vivo</li>
+        </ul>
+        <div class="meta"><span class="soon">En preparación</span><span>Básico</span></div>
+      </div>
+      <div class="track" style="--c:var(--cyan)">
+        <div class="tnum">TRACK 03</div>
+        <div class="ger">Distribuyendo</div>
+        <h3>XpaceOS</h3>
+        <div class="who">Operadores de espacio · integradores</div>
+        <p>Distribuye por cada superficie del espacio físico con el Gemelo Digital y convierte todo en inventario medible.</p>
+        <ul>
+          <li>Gemelo Digital del espacio</li>
+          <li>Reglas por hora/clima/perfil</li>
+          <li>Control real: aroma, luz, audio</li>
+        </ul>
+        <div class="meta"><a href="https://admira.app/tutorial/" target="_blank" rel="noopener">Target Model →</a><span>Intermedio</span></div>
+      </div>
+      <div class="track" style="--c:var(--green)">
+        <div class="tnum">TRACK 04</div>
+        <div class="ger">Comercializando</div>
+        <h3>admira.app</h3>
+        <div class="who">Anunciantes · agencias programáticas</div>
+        <p>Convierte cada hueco visible en inventario DOOH negociable: subasta en tiempo real y CPM auditado.</p>
+        <ul>
+          <li>RTB &lt; 200 ms por impresión</li>
+          <li>Contexto, audiencia y momento</li>
+          <li>Trazabilidad y CPM auditado</li>
+        </ul>
+        <div class="meta"><a href="https://admira.app/tutorial/" target="_blank" rel="noopener">Target Model →</a><span>Avanzado</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="encargos">
+  <div class="wrap">
+    <p class="kicker">Encargos reales, no lecciones</p>
+    <h2>Terminas cada tutorial con algo publicado</h2>
+    <p class="sec-lede">Nada de ejercicios de mentira. Cada tutorial es un encargo que sale de verdad a producción, con las mismas herramientas que usa el equipo. Un vistazo a lo que harás:</p>
+    <div class="projects">
+      <div class="proj" style="--c:var(--violet)">
+        <div class="pk">admira.studio</div>
+        <h3>Una cuña sonora para tu tienda</h3>
+        <p>De un brief a una cuña lista para emitir, con música y voz de marca.</p>
+        <div class="stack"><span class="tag">Suno</span><span class="tag">ElevenLabs</span><span class="tag">brief</span></div>
+      </div>
+      <div class="proj" style="--c:var(--magenta)">
+        <div class="pk">admira.tv</div>
+        <h3>La parrilla del fin de semana</h3>
+        <p>Programas qué se emite, dónde y cuándo en la red de pantallas.</p>
+        <div class="stack"><span class="tag">calendario</span><span class="tag">superficies</span><span class="tag">DOOH</span></div>
+      </div>
+      <div class="proj" style="--c:var(--cyan)">
+        <div class="pk">XpaceOS</div>
+        <h3>El gemelo de tu tienda</h3>
+        <p>Montas el gemelo y le pones reglas que controlan el espacio real.</p>
+        <div class="stack"><span class="tag">gemelo</span><span class="tag">reglas</span><span class="tag">aroma·luz</span></div>
+      </div>
+      <div class="proj" style="--c:var(--green)">
+        <div class="pk">admira.app</div>
+        <h3>Tu primera subasta RTB</h3>
+        <p>Pones un hueco a subasta y ves cómo se comercializa por impresión.</p>
+        <div class="stack"><span class="tag">RTB</span><span class="tag">CPM</span><span class="tag">contexto</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="avatar">
+  <div class="wrap">
+    <p class="kicker">Resuelve tu duda</p>
+    <h2>¿Te atascas? Pregúntale al avatar</h2>
+    <p class="sec-lede">Un avatar digital hiperrealista —<b>digitalavatar.ai</b>— conectado al cerebro de la suite responde cualquier duda al instante, por voz o texto, con el contexto de tu producto y tu tienda. Como tener un formador de Admira 24/7.</p>
+    <div class="avatar-grid">
+      <div class="avatar-copy">
+        <div class="chips">
+          <span class="chip">🎙️ Voz o texto</span>
+          <span class="chip">🧠 Cerebro de la suite</span>
+          <span class="chip">🗣️ Voz de Admira</span>
+          <span class="chip">🌙 24/7</span>
+        </div>
+        <form class="ask" onsubmit="return false" aria-label="Pregunta al avatar">
+          <input type="text" placeholder="Ej.: ¿Cómo programo una toma de audio por zona en XpaceOS?" aria-label="Escribe tu duda">
+          <a class="btn primary" href="https://digitalavatar.ai/" target="_blank" rel="noopener">Preguntar →</a>
+        </form>
+        <div class="chips" style="margin-top:14px">
+          <span class="chip">💡 ¿Qué motor uso en admira.studio para una cuña?</span>
+          <span class="chip">💡 ¿Cómo subo un creativo a la parrilla de admira.tv?</span>
+        </div>
+      </div>
+      <div class="avatar-stage">
+        <span class="badge-live">● Avatar en vivo</span>
+        <div class="frame-fallback">Avatar en <b>digitalavatar.ai</b><br><a href="https://digitalavatar.ai/" target="_blank" rel="noopener">abrir el avatar →</a></div>
+        <iframe src="https://digitalavatar.ai/" title="Avatar digital — digitalavatar.ai" loading="lazy" referrerpolicy="no-referrer"></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="metodo" class="method">
+  <div class="wrap">
+    <p class="kicker">El hilo conductor</p>
+    <h2>El Método Xpacios</h2>
+    <p class="sec-lede">Todos los tutoriales comparten un mismo método: la secuencia que va del contenido a la venta del espacio, con un único dato compartido de punta a punta. Aprender el método es lo que convierte cuatro herramientas en un sistema operativo.</p>
+    <div class="flow">
+      <span class="step"><b>Creando</b></span><span class="arw">→</span>
+      <span class="step"><b>Emitiendo</b></span><span class="arw">→</span>
+      <span class="step"><b>Distribuyendo</b></span><span class="arw">→</span>
+      <span class="step"><b>Comercializando</b></span>
+    </div>
+  </div>
+</section>
+
+<section id="certificacion">
+  <div class="wrap">
+    <p class="kicker">Certificación</p>
+    <h2>Titula tu dominio de la suite</h2>
+    <p class="sec-lede">Al superar un track obtienes una credencial oficial AdmiraNeXT. Encadena los cuatro para la certificación de operador completo del sistema.</p>
+    <div class="certs">
+      <div class="cert">
+        <div class="badge-ic">🎓</div>
+        <h3>Admira Creator</h3>
+        <p>Domina la creación de contenido con IA para cartelería sobre admira.studio.</p>
+        <div class="lvl">admira.studio · Básico</div>
+      </div>
+      <div class="cert">
+        <div class="badge-ic">🛰️</div>
+        <h3>Admira Operator</h3>
+        <p>Emite y distribuye sobre admira.tv + XpaceOS: parrilla, gemelo y control del espacio.</p>
+        <div class="lvl">admira.tv + XpaceOS · Intermedio</div>
+      </div>
+      <div class="cert">
+        <div class="badge-ic">🏛️</div>
+        <h3>Admira Certified Partner</h3>
+        <p>El recorrido completo, incluida la comercialización RTB en admira.app. Habilita para desplegar en cliente.</p>
+        <div class="lvl">Toda la suite · Avanzado</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="publico">
+  <div class="wrap">
+    <p class="kicker">Para quién</p>
+    <h2>Una academia, cuatro perfiles</h2>
+    <div class="aud">
+      <div class="a"><div class="ic">🏪</div><h4>Retailers</h4><p>Prueba y opera tu propio espacio antes de invertir en hardware.</p></div>
+      <div class="a"><div class="ic">🤝</div><h4>Partners</h4><p>Certifícate para desplegar la suite en cliente con garantía.</p></div>
+      <div class="a"><div class="ic">📊</div><h4>Agencias</h4><p>Aprende a comprar inventario físico programático con CPM auditado.</p></div>
+      <div class="a"><div class="ic">🧠</div><h4>Equipo</h4><p>Onboarding común para todo el equipo de silicio y humano.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="acceso" class="final">
+  <div class="wrap">
+    <h2>Empieza a aprender hoy</h2>
+    <p>Abre el primer tutorial y, si te surge cualquier duda, pregúntale al avatar. Sin esperas, sin calendarios.</p>
+    <div class="ctas" style="justify-content:center">
+      <a class="btn primary" href="#tutoriales">Ver tutoriales</a>
+      <a class="btn ghost" href="#avatar">Pregunta al avatar</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#top" style="font-size:16px">admira<span class="dot">.</span><span class="u">academy</span></a>
+    <span>© 2026 AdmiraNeXT · Barcelona</span>
+    <span class="sig mono">v.2026.07.19 · maqueta</span>
+  </div>
+</footer>
+
+</body>
+</html>
