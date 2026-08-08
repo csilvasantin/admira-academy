@@ -161,8 +161,20 @@
     if(!sourceReady(training)){ setNotice("#pixeria-verification-notice","La fuente aún no está validada.","error"); return; }
     if(!$("#advisor-pixeria-consent").checked){ setNotice("#pixeria-verification-notice","Confirma la autorización de importación.","error"); return; }
     $("#import-advisor-video").disabled=true;
-    setNotice("#pixeria-verification-notice","Solicitando la importación etiquetada a Pixeria…");
+    setNotice("#pixeria-verification-notice","Comprobando que la fuente no exista ya en Pixeria…");
     try{
+      const indexResponse=await fetch(`${PIXERIA_INDEX}?dedupe=${Date.now()}`,{cache:"no-store",headers:{Accept:"application/json"}});
+      if(!indexResponse.ok) throw new Error(`No se pudo comprobar el índice público (${indexResponse.status})`);
+      const existing=A.findPixeriaVideo(await indexResponse.json(),training.video.url);
+      if(existing){
+        const tagged=T.hasRequiredPixeriaTags(agent.id,existing);
+        training.pixeria={status:tagged ? "verified" : "imported_needs_tags",detail:tagged ? "La fuente ya existía y está correctamente etiquetada; no se creó un duplicado." : "La fuente ya existe, pero le faltan #formacion o la etiqueta canónica; no se creó un duplicado.",verifiedAt:new Date().toISOString(),item:{id:existing.id || existing.key || "",url:existing.url,title:existing.title || existing.name || training.video.title,thumbnail:existing.thumbnail || "",tags:existing.tags || []}};
+        T.transition(training,"pixeria",training.pixeria.status,training.pixeria.detail); saveAcademy();
+        setNotice("#pixeria-verification-notice",training.pixeria.detail,tagged ? "ok" : "error");
+        if(tagged) showVerifiedPreview(training.pixeria.item); else hidePreview();
+        renderHeader(); renderPeriods(); renderTimeline(); return;
+      }
+      setNotice("#pixeria-verification-notice","Fuente nueva: solicitando la importación etiquetada a Pixeria…");
       const response=await fetch(PIXERIA_IMPORT,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({url:training.video.url,format:"video",comment:T.buildPixeriaComment(agent.id,training.topic),tags:["formacion",T.role(agent.id).tag]})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(data.error || data.message || `Pixeria respondió ${response.status}`);
@@ -171,7 +183,10 @@
       setNotice("#pixeria-verification-notice",training.pixeria.detail);
       await verifyPixeriaIndex(true);
     }catch(error){
-      training.pixeria={...(training.pixeria || {}),status:"error",detail:`Importación no confirmada: ${error.message}`};
+      const networkDetail=error instanceof TypeError && /fetch/i.test(String(error.message))
+        ? "No se pudo alcanzar el importador del Mac Mini. Comprueba Tailscale y el servicio /admira/tube antes de reintentar; no se ha asumido ninguna importación."
+        : `Importación no confirmada: ${error.message}`;
+      training.pixeria={...(training.pixeria || {}),status:"error",detail:networkDetail};
       T.transition(training,"pixeria","error",training.pixeria.detail); saveAcademy();
       setNotice("#pixeria-verification-notice",training.pixeria.detail,"error"); hidePreview();
     }finally{$("#import-advisor-video").disabled=!sourceReady(trainingFor());}

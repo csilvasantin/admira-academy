@@ -89,10 +89,20 @@ test("Pixeria receives canonical formation tags and is checked through its publi
   assert.match(js,/publicVideo && tagged/);
 });
 
-test("the preview is unlocked only from the successful public verification branch",()=>{
+test("the import checks Pixeria first and never duplicates an existing YouTube source",()=>{
+  const dedupeCheck=js.indexOf("?dedupe=${Date.now()}");
+  const importRequest=js.indexOf("fetch(PIXERIA_IMPORT");
+  assert.ok(dedupeCheck >= 0 && importRequest > dedupeCheck);
+  assert.match(js,/const existing=A\.findPixeriaVideo/);
+  assert.match(js,/no se creó un duplicado/);
+  assert.match(js,/Comprueba Tailscale y el servicio \/admira\/tube/);
+});
+
+test("the preview is unlocked only by a tagged item confirmed in the public index",()=>{
   const verifiedBranch=js.indexOf("if(publicVideo && tagged)");
-  const showCall=js.indexOf("showVerifiedPreview(training.pixeria.item)");
-  assert.ok(verifiedBranch >= 0 && showCall > verifiedBranch);
+  const pollingShowCall=js.indexOf("showVerifiedPreview(training.pixeria.item)",verifiedBranch);
+  assert.ok(verifiedBranch >= 0 && pollingShowCall > verifiedBranch);
+  assert.match(js,/if\(existing\)[\s\S]*?const tagged=T\.hasRequiredPixeriaTags[\s\S]*?if\(tagged\) showVerifiedPreview/);
   assert.match(js,/function hidePreview\(\)/);
   assert.doesNotMatch(html,/id="video-metadata"[^>]*>[\s\S]*?<img/);
   assert.match(html,/El previo sólo aparece si el vídeo existe como activo público de Pixeria/);
