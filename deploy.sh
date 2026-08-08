@@ -136,20 +136,23 @@ PY
 # Las fichas de consejero comparten una sola ruta dinámica por query string. Se
 # integran también en el documento para que las ocho URL y ambos tipos de agente
 # sean inmunes al fallback MIME del dominio canónico.
-python3 - "$TMP/consejeros/index.html" "$TMP/advisor.css" "$TMP/advisor-core.js" "$TMP/advisor.js" <<'PY'
+python3 - "$TMP/consejeros/index.html" "$TMP/advisor.css" "$TMP/advisor-core.js" "$TMP/academy-training-core.js" "$TMP/advisor.js" <<'PY'
 import sys
-index_path, css_path, core_path, js_path = sys.argv[1:]
+index_path, css_path, core_path, training_core_path, js_path = sys.argv[1:]
 html = open(index_path, encoding="utf-8").read()
 css = open(css_path, encoding="utf-8").read()
 core = open(core_path, encoding="utf-8").read()
+training_core = open(training_core_path, encoding="utf-8").read()
 js = open(js_path, encoding="utf-8").read()
 css_tag = '<link rel="stylesheet" href="/advisor.css">'
 core_tag = '<script src="/advisor-core.js" defer></script>'
+training_core_tag = '<script src="/academy-training-core.js" defer></script>'
 js_tag = '<script src="/advisor.js" defer></script>'
-if css_tag not in html or core_tag not in html or js_tag not in html:
+if css_tag not in html or core_tag not in html or training_core_tag not in html or js_tag not in html:
     raise SystemExit("✗ no se encontraron los anclajes de consejeros")
 html = html.replace(css_tag, "<style>\n" + css + "\n</style>", 1)
 html = html.replace(core_tag, "<script>\n" + core + "\n</script>", 1)
+html = html.replace(training_core_tag, "<script>\n" + training_core + "\n</script>", 1)
 html = html.replace(js_tag, '<script>\ndocument.addEventListener("DOMContentLoaded", () => {\n' + js + "\n});\n</script>", 1)
 open(index_path, "w", encoding="utf-8").write(html)
 PY

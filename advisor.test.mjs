@@ -9,6 +9,8 @@ const css = await readFile(new URL("./advisor.css",import.meta.url),"utf8");
 const deploy = await readFile(new URL("./deploy.sh",import.meta.url),"utf8");
 const coreSource = await readFile(new URL("./advisor-core.js",import.meta.url),"utf8");
 const sandbox={module:{exports:{}}}; vm.runInNewContext(coreSource,sandbox); const A=sandbox.module.exports;
+const trainingSource = await readFile(new URL("./academy-training-core.js",import.meta.url),"utf8");
+const trainingSandbox={module:{exports:{}}}; vm.runInNewContext(trainingSource,trainingSandbox); const T=trainingSandbox.module.exports;
 
 test("each of the eight Council seats has a stable public detail identity",()=>{
   assert.equal(JSON.stringify(A.COUNCIL.map(item=>item.id)),JSON.stringify(["ceo","cto","coo","cfo","cco","cdo","cxo","cso"]));
@@ -52,8 +54,36 @@ test("the page exposes the four summaries, accessible controls and honest empty 
 });
 
 test("the signed deployment inlines and stamps the counselor page",()=>{
-  assert.match(deploy,/consejeros\/index\.html.+advisor\.css.+advisor-core\.js.+advisor\.js/);
+  assert.match(deploy,/consejeros\/index\.html.+advisor\.css.+advisor-core\.js.+academy-training-core\.js.+advisor\.js/);
   assert.match(deploy,/Admira Academy Consejeros/);
   assert.match(deploy,/el sello no llegó a consejeros\/index\.html/);
   assert.match(deploy,/MacBookPro14\|MacBookProNegro14\) SUF="MBP14"/);
+});
+
+test("Formar searches by counselor and keeps the carbon record separate",()=>{
+  assert.match(html,/id="train-open"[^>]*>✦ Formar/);
+  assert.match(html,/id="training-panel"[^>]*hidden/);
+  assert.match(html,/id="youtube-search"/);
+  assert.equal(T.youtubeSearchUrl("ceo",T.defaultTopic("ceo")).startsWith("https://www.youtube.com/results?search_query="),true);
+  assert.match(js,/audience !== "silicio"/);
+  assert.match(js,/Selecciona Silicio para formar este agente sin mezclar los registros/);
+});
+
+test("Pixeria matching deduplicates YouTube variants and ignores non-video items",()=>{
+  const items={items:[
+    {id:"image",type:"image",prompt:"https://youtu.be/jNQXAC9IVRw",createdAt:"2026-08-08T13:00:00Z"},
+    {id:"old",type:"video",prompt:"https://youtu.be/jNQXAC9IVRw",createdAt:"2026-08-08T12:00:00Z"},
+    {id:"new",type:"video",prompt:"https://www.youtube.com/shorts/jNQXAC9IVRw",createdAt:"2026-08-08T14:00:00Z"}
+  ]};
+  assert.equal(A.findPixeriaVideo(items,"https://www.youtube.com/watch?v=jNQXAC9IVRw").id,"new");
+  assert.equal(A.findPixeriaVideo(items,"https://www.youtube.com/watch?v=missing"),null);
+});
+
+test("Pixeria preview is withheld until the public item exists and canonical tags are sent",()=>{
+  assert.match(html,/id="pixeria-preview" hidden/);
+  assert.match(js,/tags:\["formacion",info\.tag\]/);
+  assert.match(js,/if\(!pixeria\?\.itemUrl\)\{ preview\.hidden = true/);
+  assert.match(js,/www\.pixeria\.com\/stock\.html/);
+  assert.match(js,/Comprobar estado/);
+  assert.equal(T.hasRequiredPixeriaTags("ceo",{tags:["formacion","stevejobs"]}),true);
 });

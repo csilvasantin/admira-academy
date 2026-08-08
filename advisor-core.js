@@ -119,5 +119,26 @@
     return {value:Math.round(Math.min(4,completed)/4*100),label:completed ? `${completed} de 4 lecciones` : "Sin evaluar",detail:completed === 4 ? "Recorrido local completo; revisión externa pendiente." : "Progreso local con evidencia; no equivale a acreditación."};
   }
 
-  return {COUNCIL,LESSONS,PERIODS,council,audience,parseState,collect,period,within,summarize,progress};
+  function youtubeId(value){
+    const text = String(value || "");
+    const match = text.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:[^#\s]*&)?v=|shorts\/|embed\/|live\/))([A-Za-z0-9_-]{6,})/i);
+    return match ? match[1] : null;
+  }
+  function pixeriaItems(payload){
+    if(Array.isArray(payload)) return payload;
+    if(Array.isArray(payload?.items)) return payload.items;
+    if(Array.isArray(payload?.stock)) return payload.stock;
+    return [];
+  }
+  function findPixeriaVideo(payload, sourceUrl){
+    const id = youtubeId(sourceUrl);
+    const candidates = pixeriaItems(payload).filter(item => {
+      if(item?.type !== "video") return false;
+      const source = String(item.prompt || item.sourceUrl || "");
+      return source === sourceUrl || Boolean(id && youtubeId(source) === id);
+    });
+    return candidates.sort((a,b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0] || null;
+  }
+
+  return {COUNCIL,LESSONS,PERIODS,council,audience,parseState,collect,period,within,summarize,progress,youtubeId,pixeriaItems,findPixeriaVideo};
 });
