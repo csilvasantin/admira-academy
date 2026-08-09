@@ -51,7 +51,24 @@
       improvement:input.improvement !== false
     };
   }
-  function collectSilicon(agentId, academyRaw, platformRaw){
+  function collectCoach(agentId, audienceValue, coachRaw){
+    const coach=parseState(coachRaw), selectedAudience=audience(audienceValue), items=[];
+    const record=safeObject(safeObject(safeObject(coach.records)[selectedAudience])[agentId]);
+    for(const [index,entryRaw] of (Array.isArray(record.completions) ? record.completions : []).entries()){
+      const entry=safeObject(entryRaw), yokup=safeObject(entry.yokup);
+      if(yokup.status !== "verified" || !yokup.eventId || !yokup.completedAt) continue;
+      items.push(activity({
+        id:yokup.eventId,
+        kind:"leido",
+        title:`Coach · ${entry.dimensionLabel || entry.dimension || "Equilibrio"} · ${entry.title || "Lección aplicada"}`,
+        detail:`Aplicación: ${clip(entry.application || "evidencia registrada",220)} · Yokup ${yokup.missionId || "verificado"}`,
+        at:yokup.completedAt,
+        improvement:true
+      }));
+    }
+    return items.filter(Boolean);
+  }
+  function collectSilicon(agentId, academyRaw, platformRaw, coachRaw){
     const academy = parseState(academyRaw), platform = parseState(platformRaw), items = [];
     const lessons = safeObject(safeObject(safeObject(academy.records)[agentId]).lessons);
     for(const [lessonId, entryRaw] of Object.entries(lessons)){
@@ -75,9 +92,10 @@
       if(student.id !== agentId || closure.audience === "carbono") continue;
       items.push(activity({id:closure.id,kind:"mejora",title:work.title || "Cierre de mejora",detail:`${work.type || "trabajo"} · ${work.status || "estado no declarado"} · ${clip(closure.evidence || "sin detalle")}`,at:closure.closedAt || safeObject(closure.time).endedAt,improvement:true}));
     }
+    items.push(...collectCoach(agentId,"silicio",coachRaw));
     return items.filter(Boolean).sort((a,b) => b.at.localeCompare(a.at));
   }
-  function collectCarbon(agentId, carbonRaw, platformRaw){
+  function collectCarbon(agentId, carbonRaw, platformRaw, coachRaw){
     const carbon = parseState(carbonRaw), platform = parseState(platformRaw), items = [];
     const record = safeObject(safeObject(carbon.records)[agentId]);
     for(const [index,itemRaw] of (Array.isArray(record.activities) ? record.activities : []).entries()){
@@ -89,13 +107,14 @@
       if(student.id !== agentId || closure.audience !== "carbono") continue;
       items.push(activity({id:closure.id,kind:"mejora",title:work.title || "Cierre de mejora",detail:`${work.type || "trabajo"} · ${work.status || "estado no declarado"} · ${clip(closure.evidence || "sin detalle")}`,at:closure.closedAt || safeObject(closure.time).endedAt,improvement:true}));
     }
+    items.push(...collectCoach(agentId,"carbono",coachRaw));
     return items.filter(Boolean).sort((a,b) => b.at.localeCompare(a.at));
   }
   function collect(agentId, audienceValue, states={}){
     const id = council(agentId).id;
     return audience(audienceValue) === "carbono"
-      ? collectCarbon(id, states.carbon, states.platform)
-      : collectSilicon(id, states.academy, states.platform);
+      ? collectCarbon(id, states.carbon, states.platform, states.coach)
+      : collectSilicon(id, states.academy, states.platform, states.coach);
   }
   function period(id){ return PERIODS.find(item => item.id === id) || PERIODS[0]; }
   function within(items, periodId, now=Date.now()){

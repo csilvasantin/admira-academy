@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Coach · Tecnología, Creatividad y Negocio — Admira Academy</title>
+  <meta name="description" content="Coach horario de Admira Academy para equilibrar Tecnología, Creatividad y Negocio con lecciones aplicadas y trazabilidad en Yokup.">
+  <meta name="theme-color" content="#080a10">
+  <link rel="canonical" href="https://admira.academy/coach/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/coach.css">
+  <script src="/advisor-core.js" defer></script>
+  <script src="/coach-core.js" defer></script>
+  <script src="/coach.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#lesson">Saltar a la lección</a>
+  <header class="site-header"><div class="wrap header-inner"><a class="brand" href="/">admira<span>.</span>academy</a><nav aria-label="Navegación"><a href="/">Academia</a><a href="/plataforma/">Plataforma</a><a href="/consejeros/">Consejeros</a><a class="active" href="/coach/" aria-current="page">Coach</a><a href="/highscore/">Highscore</a><a href="/help/">Ayuda</a></nav></div></header>
+
+  <main>
+    <section class="hero"><div class="wrap hero-grid">
+      <div><p class="eyebrow">COACH · BITS + ATOMS</p><h1>Tres capacidades.<br><span>Un solo equilibrio.</span></h1><p class="lede">Tecnología hace posible. Creatividad hace memorable. Negocio hace sostenible. Cuando las tres avanzan juntas, las posibilidades de éxito se multiplican; cuando una queda atrás, el sistema completo se debilita.</p><a class="university-link" href="https://bitsandatoms.ai" target="_blank" rel="noopener">Universidad bitsandatoms.ai ↗</a></div>
+      <aside class="triad" aria-label="Las tres dimensiones del Coach"><div class="triad-core">×</div><div class="triad-node technology"><span>01</span><strong>Tecnología</strong></div><div class="triad-node creativity"><span>02</span><strong>Creatividad</strong></div><div class="triad-node business"><span>03</span><strong>Negocio</strong></div><p>El éxito vive en la intersección.</p></aside>
+    </div></section>
+
+    <section class="coach-section"><div class="wrap">
+      <div class="cycle-contract"><div><span>Ritmo normativo</span><strong>1 lección por hora</strong></div><p>La secuencia nunca se detiene: Tecnología → Creatividad → Negocio. Cada dimensión vuelve exactamente tres horas después.</p><div class="clock"><small>Siguiente lección</small><b id="countdown">60:00</b></div></div>
+
+      <div class="coach-shell">
+        <aside class="learner-rail"><p class="rail-label">Aprendiz</p><label for="student-select">Consejero</label><select id="student-select"></select><div class="audience-switch" role="group" aria-label="Tipo de agente"><button type="button" data-audience="silicio" aria-pressed="true">◆ Silicio</button><button type="button" data-audience="carbono" aria-pressed="false">○ Carbono</button></div><div class="learner-state"><span id="learner-label">CEO · Steve Jobs</span><small>Registro <b id="audience-label">silicio</b> independiente</small></div><p class="privacy-note">No escribas secretos ni datos personales. La aplicación de la lección quedará como evidencia operativa en Yokup.</p></aside>
+
+        <article class="lesson-card" id="lesson">
+          <header class="lesson-head"><div><span id="dimension-number">01</span><p id="dimension-name">Tecnología</p></div><div><small id="slot-label">Franja actual</small><code id="lesson-id"></code></div></header>
+          <p class="dimension-promise" id="dimension-promise"></p><h2 id="lesson-title">Cargando lección…</h2><p class="principle" id="lesson-principle"></p>
+          <section class="practice"><span>Aplicación inmediata</span><p id="lesson-practice"></p></section>
+          <label class="application-field" for="application"><span>¿Cómo lo aplicarás hoy?</span><textarea id="application" rows="4" maxlength="900" placeholder="Describe una acción concreta y comprobable…"></textarea><small>20–900 caracteres · esta evidencia se registra en Yokup</small></label>
+          <button class="complete-button" id="complete-lesson" type="button">Completar y registrar en Yokup</button><p class="sync-status" id="sync-status" hidden aria-live="polite"></p>
+        </article>
+
+        <aside class="balance-panel"><div class="balance-head"><div><span>Equilibrio</span><strong id="balance-label">Aún sin medir</strong></div><b id="balance-total">0</b></div><div id="balance-grid"></div><p id="balance-note"></p><a id="highscore-link" href="/highscore/?audiencia=silicio&periodo=day">Ver impacto en Highscore ↗</a></aside>
+      </div>
+
+      <section class="schedule-section" aria-labelledby="schedule-title"><div class="section-head"><div><p>La rueda de tres horas</p><h2 id="schedule-title">Ahora y después</h2></div><span>La franja cambia automáticamente al inicio de cada hora.</span></div><div class="schedule" id="schedule"></div></section>
+
+      <section class="history-section" aria-labelledby="history-title"><div class="section-head"><div><p>Evidencia del aprendiz</p><h2 id="history-title">Últimas lecciones</h2></div><span>Solo las verificadas por Yokup suman en Highscore.</span></div><ul class="history" id="history"></ul></section>
+
+      <section class="doctrine"><span>Contrato del Coach</span><p>Esta herramienta mide práctica registrada, no talento innato; no es una acreditación académica. Carbono y silicio conservan historiales separados. Un clic no cuenta: la lección solo entra en el equilibrio y en Highscore cuando Yokup devuelve una evidencia verificable e idempotente.</p></section>
+    </div></section>
+  </main>
+
+  <footer><div class="wrap"><a class="brand" href="/">admira<span>.</span>academy</a><p>Coach · Tecnología + Creatividad + Negocio</p><span class="sig">academia coach v1</span></div></footer>
+</body>
+</html>

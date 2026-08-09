@@ -90,20 +90,23 @@ git archive HEAD | tar -x -C "$TMP"
 # la release sea autosuficiente y no dependa de ese router, la copia publicada
 # integra ambos recursos dentro del HTML. La fuente sigue separada para poder
 # mantenerla y probarla en local.
-python3 - "$TMP/index.html" "$TMP/academy.css" "$TMP/academy-training-core.js" "$TMP/academy.js" <<'PY'
+python3 - "$TMP/index.html" "$TMP/academy.css" "$TMP/academy-training-core.js" "$TMP/academy-capsula.js" "$TMP/academy.js" <<'PY'
 import sys
-index_path, css_path, core_path, js_path = sys.argv[1:]
+index_path, css_path, core_path, capsule_path, js_path = sys.argv[1:]
 html = open(index_path, encoding="utf-8").read()
 css = open(css_path, encoding="utf-8").read()
 core = open(core_path, encoding="utf-8").read()
+capsule = open(capsule_path, encoding="utf-8").read()
 js = open(js_path, encoding="utf-8").read()
 css_tag = '<link rel="stylesheet" href="/academy.css">'
 core_tag = '<script src="/academy-training-core.js" defer></script>'
+capsule_tag = '<script src="/academy-capsula.js" defer></script>'
 js_tag = '<script src="/academy.js" defer></script>'
-if css_tag not in html or core_tag not in html or js_tag not in html:
+if css_tag not in html or core_tag not in html or capsule_tag not in html or js_tag not in html:
     raise SystemExit("✗ no se encontraron los anclajes CSS/JS de la academia")
 html = html.replace(css_tag, "<style>\n" + css + "\n</style>", 1)
 html = html.replace(core_tag, "<script>\n" + core + "\n</script>", 1)
+html = html.replace(capsule_tag, "<script>\n" + capsule + "\n</script>", 1)
 html = html.replace(
     js_tag,
     '<script>\ndocument.addEventListener("DOMContentLoaded", () => {\n' + js + "\n});\n</script>",
@@ -172,6 +175,29 @@ js_tag = '<script src="/highscore.js" defer></script>'
 if css_tag not in html or core_tag not in html or js_tag not in html:
     raise SystemExit("✗ no se encontraron los anclajes de highscore")
 html = html.replace(css_tag, "<style>\n" + css + "\n</style>", 1)
+html = html.replace(core_tag, "<script>\n" + core + "\n</script>", 1)
+html = html.replace(js_tag, '<script>\ndocument.addEventListener("DOMContentLoaded", () => {\n' + js + "\n});\n</script>", 1)
+open(index_path, "w", encoding="utf-8").write(html)
+PY
+
+# /coach comparte el censo del Consejo y añade su propio núcleo determinista.
+# Se integra como documento autosuficiente por el mismo contrato MIME.
+python3 - "$TMP/coach/index.html" "$TMP/coach.css" "$TMP/advisor-core.js" "$TMP/coach-core.js" "$TMP/coach.js" <<'PY'
+import sys
+index_path, css_path, advisor_path, core_path, js_path = sys.argv[1:]
+html = open(index_path, encoding="utf-8").read()
+css = open(css_path, encoding="utf-8").read()
+advisor = open(advisor_path, encoding="utf-8").read()
+core = open(core_path, encoding="utf-8").read()
+js = open(js_path, encoding="utf-8").read()
+css_tag = '<link rel="stylesheet" href="/coach.css">'
+advisor_tag = '<script src="/advisor-core.js" defer></script>'
+core_tag = '<script src="/coach-core.js" defer></script>'
+js_tag = '<script src="/coach.js" defer></script>'
+if css_tag not in html or advisor_tag not in html or core_tag not in html or js_tag not in html:
+    raise SystemExit("✗ no se encontraron los anclajes de coach")
+html = html.replace(css_tag, "<style>\n" + css + "\n</style>", 1)
+html = html.replace(advisor_tag, "<script>\n" + advisor + "\n</script>", 1)
 html = html.replace(core_tag, "<script>\n" + core + "\n</script>", 1)
 html = html.replace(js_tag, '<script>\ndocument.addEventListener("DOMContentLoaded", () => {\n' + js + "\n});\n</script>", 1)
 open(index_path, "w", encoding="utf-8").write(html)
@@ -246,6 +272,20 @@ html = re.sub(r'(<span class="sig">)[^<]*(</span>)', r'\g<1>' + f'{version} · {
 open(p, "w", encoding="utf-8").write(html)
 PY
 
+VERSION="$VERSION" FIRMA="$FIRMA" python3 - "$TMP/coach/index.html" <<'PY'
+import os, re, sys
+p = sys.argv[1]
+version, firma = os.environ["VERSION"], os.environ["FIRMA"]
+html = open(p, encoding="utf-8").read()
+meta = f'<meta name="admiranext-version" content="Admira Academy Coach {version}">'
+if re.search(r'<meta\s+name="admiranext-version"[^>]*>', html):
+    html = re.sub(r'<meta\s+name="admiranext-version"[^>]*>', meta, html)
+else:
+    html = re.sub(r'(<meta\s+name="viewport"[^>]*>)', r'\1\n' + meta, html, count=1)
+html = re.sub(r'(<span class="sig">)[^<]*(</span>)', r'\g<1>' + f'{version} · {firma}' + r'\g<2>', html)
+open(p, "w", encoding="utf-8").write(html)
+PY
+
 python3 - "$TMP/version.json" <<PY
 import json, sys, datetime
 json.dump({
@@ -264,6 +304,7 @@ grep -q "$VERSION" "$TMP/plataforma/index.html" || { echo "✗ el sello no lleg�
 grep -q "$VERSION" "$TMP/help/index.html" || { echo "✗ el sello no llegó a help/index.html" >&2; exit 1; }
 grep -q "$VERSION" "$TMP/consejeros/index.html" || { echo "✗ el sello no llegó a consejeros/index.html" >&2; exit 1; }
 grep -q "$VERSION" "$TMP/highscore/index.html" || { echo "✗ el sello no llegó a highscore/index.html" >&2; exit 1; }
+grep -q "$VERSION" "$TMP/coach/index.html" || { echo "✗ el sello no llegó a coach/index.html" >&2; exit 1; }
 
 echo "→ Cloudflare Pages (proyecto admira-academy)…"
 export CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-$(bash ~/Claude/admira-vault/vault-get.sh CLOUDFLARE_API_TOKEN)}"

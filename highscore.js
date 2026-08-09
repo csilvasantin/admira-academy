@@ -9,7 +9,7 @@
   let selectedPeriod=A.period(params.get("periodo")).id;
 
   function states(){
-    return {academy:localStorage.getItem("admira-academy-v1-progress"),platform:localStorage.getItem("admira-academy-platform-v1"),carbon:localStorage.getItem("admira-academy-carbon-v1")};
+    return {academy:localStorage.getItem("admira-academy-v1-progress"),platform:localStorage.getItem("admira-academy-platform-v1"),carbon:localStorage.getItem("admira-academy-carbon-v1"),coach:localStorage.getItem("admira-academy-coach-v1")};
   }
   function escapeHtml(value){ return String(value ?? "").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"})[character]); }
   function syncUrl(){

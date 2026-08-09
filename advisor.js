@@ -19,7 +19,8 @@
   const states = {
     academy:JSON.stringify(academy),
     platform:localStorage.getItem("admira-academy-platform-v1"),
-    carbon:localStorage.getItem("admira-academy-carbon-v1")
+    carbon:localStorage.getItem("admira-academy-carbon-v1"),
+    coach:localStorage.getItem("admira-academy-coach-v1")
   };
 
   function loadAcademy(){

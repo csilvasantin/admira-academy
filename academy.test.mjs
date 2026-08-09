@@ -159,6 +159,8 @@ test("responsive safeguards include the training workspace", () => {
 test("the signed release inlines core, application and CSS assets", () => {
   assert.match(deploy, /academy-training-core\.js/);
   assert.match(deploy, /html\.replace\(core_tag/);
+  assert.match(deploy, /academy-capsula\.js/);
+  assert.match(deploy, /html\.replace\(capsule_tag/);
   assert.match(deploy, /html\.replace\(css_tag/);
   assert.match(deploy, /DOMContentLoaded/);
   assert.match(deploy, /--project-name bits-and-atoms/);
