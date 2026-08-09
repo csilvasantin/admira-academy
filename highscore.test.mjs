@@ -7,9 +7,11 @@ const html=await readFile(new URL("./highscore/index.html",import.meta.url),"utf
 const css=await readFile(new URL("./highscore.css",import.meta.url),"utf8");
 const js=await readFile(new URL("./highscore.js",import.meta.url),"utf8");
 const coreSource=await readFile(new URL("./advisor-core.js",import.meta.url),"utf8");
+const highscoreProxySource=await readFile(new URL("./functions/api/highscore-capsules.js",import.meta.url),"utf8");
 const deploy=await readFile(new URL("./deploy.sh",import.meta.url),"utf8");
 const redirects=await readFile(new URL("./_redirects",import.meta.url),"utf8");
 const sandbox={module:{exports:{}}}; vm.runInNewContext(coreSource,sandbox); const A=sandbox.module.exports;
+const moduleFromSource=source=>import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
 
 test("the highscore route exposes eight counselors and the four canonical periods",()=>{
   assert.match(html,/Ranking del Consejo/);
@@ -42,9 +44,33 @@ test("zero activity remains visible and unranked instead of being simulated",()=
   const rows=A.leaderboard("silicio",{},"day",Date.now());
   assert.equal(rows.length,8);
   assert.ok(rows.every(row=>row.score===0 && row.rank===null));
-  assert.match(html,/Cero significa que este navegador no conserva actividad/);
-  assert.match(html,/no inventa una clasificación global/);
+  assert.match(html,/Cero significa que no existe actividad verificada/);
+  assert.match(html,/cápsulas verificadas globalmente por Yokup/);
   assert.match(js,/localStorage\.getItem\("admira-academy-v1-progress"\)/);
+});
+
+test("verified Yokup capsules score globally by counselor, audience and period",()=>{
+  const now=Date.parse("2026-08-09T18:00:00Z"), states={yokupCapsules:{items:[
+    {id:"capsula-silicio-video-1",audience:"silicio",counselor:"cdo",dimension:"creatividad",title:"Diseño",completedAt:"2026-08-09T17:00:00Z",url:"https://www.pixeria.com/stock.html?highlight=video-1"},
+    {id:"capsula-carbono-video-1",audience:"carbono",counselor:"cdo",dimension:"creatividad",title:"Diseño",completedAt:"2026-08-09T17:00:00Z",url:"https://www.pixeria.com/stock.html?highlight=video-1"},
+    {id:"pending",audience:"silicio",counselor:"cto",title:"Sin fecha"}
+  ]}};
+  assert.equal(A.leaderboard("silicio",states,"day",now).find(row=>row.id==="cdo").score,1);
+  assert.equal(A.leaderboard("carbono",states,"day",now).find(row=>row.id==="cdo").score,1);
+  assert.equal(A.leaderboard("silicio",states,"day",now).find(row=>row.id==="cto").score,0);
+  assert.match(js,/fetch\("\/api\/highscore-capsules"/);
+});
+
+test("the same-origin feed forwards Yokup without caching",async()=>{
+  const proxy=await moduleFromSource(highscoreProxySource), realFetch=globalThis.fetch;
+  globalThis.fetch=async url=>{
+    assert.equal(String(url),"https://api.yokup.com/academy/highscore/capsulas");
+    return new Response(JSON.stringify({ok:true,items:[{id:"capsula-1"}]}),{status:200,headers:{"Content-Type":"application/json"}});
+  };
+  try{
+    const response=await proxy.onRequestGet(), body=await response.json();
+    assert.equal(response.status,200); assert.equal(response.headers.get("Cache-Control"),"no-store"); assert.equal(body.items.length,1);
+  }finally{ globalThis.fetch=realFetch; }
 });
 
 test("future activity is excluded from every period",()=>{

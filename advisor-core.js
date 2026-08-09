@@ -68,7 +68,29 @@
     }
     return items.filter(Boolean);
   }
-  function collectSilicon(agentId, academyRaw, platformRaw, coachRaw){
+  function yokupCapsuleItems(raw){
+    if(Array.isArray(raw)) return raw;
+    const payload=parseState(raw);
+    return Array.isArray(payload.items) ? payload.items : [];
+  }
+  function collectYokupCapsules(agentId,audienceValue,raw){
+    const selectedAudience=audience(audienceValue), items=[];
+    for(const entryRaw of yokupCapsuleItems(raw)){
+      const entry=safeObject(entryRaw), counselorId=String(entry.counselor || "").toLowerCase();
+      if(entry.audience!==selectedAudience || !COUNCIL.some(item=>item.id===counselorId) || counselorId!==agentId || !entry.id || !entry.completedAt) continue;
+      items.push(activity({
+        id:entry.id,
+        kind:"leido",
+        title:`Cápsula · ${entry.title || entry.dimension || "Conocimiento verificado"}`,
+        detail:`${entry.dimension || "Formación"} · Yokup verificó la publicación en Pixeria`,
+        at:entry.completedAt,
+        url:entry.url,
+        improvement:true
+      }));
+    }
+    return items.filter(Boolean);
+  }
+  function collectSilicon(agentId, academyRaw, platformRaw, coachRaw, yokupCapsulesRaw){
     const academy = parseState(academyRaw), platform = parseState(platformRaw), items = [];
     const lessons = safeObject(safeObject(safeObject(academy.records)[agentId]).lessons);
     for(const [lessonId, entryRaw] of Object.entries(lessons)){
@@ -93,9 +115,10 @@
       items.push(activity({id:closure.id,kind:"mejora",title:work.title || "Cierre de mejora",detail:`${work.type || "trabajo"} · ${work.status || "estado no declarado"} · ${clip(closure.evidence || "sin detalle")}`,at:closure.closedAt || safeObject(closure.time).endedAt,improvement:true}));
     }
     items.push(...collectCoach(agentId,"silicio",coachRaw));
+    items.push(...collectYokupCapsules(agentId,"silicio",yokupCapsulesRaw));
     return items.filter(Boolean).sort((a,b) => b.at.localeCompare(a.at));
   }
-  function collectCarbon(agentId, carbonRaw, platformRaw, coachRaw){
+  function collectCarbon(agentId, carbonRaw, platformRaw, coachRaw, yokupCapsulesRaw){
     const carbon = parseState(carbonRaw), platform = parseState(platformRaw), items = [];
     const record = safeObject(safeObject(carbon.records)[agentId]);
     for(const [index,itemRaw] of (Array.isArray(record.activities) ? record.activities : []).entries()){
@@ -108,13 +131,14 @@
       items.push(activity({id:closure.id,kind:"mejora",title:work.title || "Cierre de mejora",detail:`${work.type || "trabajo"} · ${work.status || "estado no declarado"} · ${clip(closure.evidence || "sin detalle")}`,at:closure.closedAt || safeObject(closure.time).endedAt,improvement:true}));
     }
     items.push(...collectCoach(agentId,"carbono",coachRaw));
+    items.push(...collectYokupCapsules(agentId,"carbono",yokupCapsulesRaw));
     return items.filter(Boolean).sort((a,b) => b.at.localeCompare(a.at));
   }
   function collect(agentId, audienceValue, states={}){
     const id = council(agentId).id;
     return audience(audienceValue) === "carbono"
-      ? collectCarbon(id, states.carbon, states.platform, states.coach)
-      : collectSilicon(id, states.academy, states.platform, states.coach);
+      ? collectCarbon(id, states.carbon, states.platform, states.coach, states.yokupCapsules)
+      : collectSilicon(id, states.academy, states.platform, states.coach, states.yokupCapsules);
   }
   function period(id){ return PERIODS.find(item => item.id === id) || PERIODS[0]; }
   function within(items, periodId, now=Date.now()){
@@ -175,5 +199,5 @@
     return candidates.sort((a,b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0] || null;
   }
 
-  return {COUNCIL,LESSONS,PERIODS,council,audience,parseState,collect,period,within,summarize,progress,leaderboard,youtubeId,pixeriaItems,findPixeriaVideo};
+  return {COUNCIL,LESSONS,PERIODS,council,audience,parseState,collect,collectYokupCapsules,period,within,summarize,progress,leaderboard,youtubeId,pixeriaItems,findPixeriaVideo};
 });

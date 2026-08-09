@@ -7,9 +7,10 @@
   const params=new URLSearchParams(location.search);
   let audience=A.audience(params.get("audiencia"));
   let selectedPeriod=A.period(params.get("periodo")).id;
+  let yokupCapsules={items:[]}, syncState="loading";
 
   function states(){
-    return {academy:localStorage.getItem("admira-academy-v1-progress"),platform:localStorage.getItem("admira-academy-platform-v1"),carbon:localStorage.getItem("admira-academy-carbon-v1"),coach:localStorage.getItem("admira-academy-coach-v1")};
+    return {academy:localStorage.getItem("admira-academy-v1-progress"),platform:localStorage.getItem("admira-academy-platform-v1"),carbon:localStorage.getItem("admira-academy-carbon-v1"),coach:localStorage.getItem("admira-academy-coach-v1"),yokupCapsules};
   }
   function escapeHtml(value){ return String(value ?? "").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"})[character]); }
   function syncUrl(){
@@ -35,13 +36,23 @@
   function render(){
     const currentStates=states(), rows=A.leaderboard(audience,currentStates,selectedPeriod), active=rows.filter(row=>row.score>0), total=rows.reduce((sum,row)=>sum+row.score,0), leader=active[0] || null;
     $$('[data-audience]').forEach(button=>{ const pressed=button.dataset.audience===audience; button.classList.toggle("active",pressed); button.setAttribute("aria-pressed",String(pressed)); });
-    $("#data-scope").textContent=audience==="silicio" ? "Silicio · trazabilidad local de este navegador" : "Carbono · registro local independiente";
+    const audienceLabel=audience==="silicio" ? "Silicio" : "Carbono";
+    $("#data-scope").textContent=syncState==="ready" ? `${audienceLabel} · cápsulas verificadas por Yokup + actividad local` : syncState==="error" ? `${audienceLabel} · Yokup no disponible; mostrando actividad local` : `${audienceLabel} · consultando Yokup…`;
     $("#total-studies").textContent=String(total); $("#selected-period-label").textContent=A.period(selectedPeriod).label.toLowerCase();
     $("#active-students").textContent=`${active.length}/8`; $("#leader-name").textContent=leader ? `${leader.role} · ${leader.alias}` : "Sin actividad"; $("#leader-score").textContent=`${leader?.score || 0} ${(leader?.score || 0)===1 ? "estudio" : "estudios"}`;
     $("#updated-at").textContent=`Actualizado ${new Intl.DateTimeFormat("es-ES",{hour:"2-digit",minute:"2-digit"}).format(new Date())}`;
     renderPeriods(currentStates); renderPodium(rows); renderTable(rows);
   }
+  async function loadYokupCapsules(){
+    try{
+      const response=await fetch("/api/highscore-capsules",{headers:{Accept:"application/json"},cache:"no-store"});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok || !result.ok || !Array.isArray(result.items)) throw new Error(result.error || `Yokup respondió ${response.status}`);
+      yokupCapsules=result; syncState="ready";
+    }catch(_error){ yokupCapsules={items:[]}; syncState="error"; }
+    render();
+  }
   $$('[data-audience]').forEach(button=>button.addEventListener("click",()=>{ audience=A.audience(button.dataset.audience); syncUrl(); render(); }));
   window.addEventListener("storage",render);
-  syncUrl(); render();
+  syncUrl(); render(); loadYokupCapsules();
 })();
