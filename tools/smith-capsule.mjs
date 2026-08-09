@@ -74,8 +74,14 @@ function run(command,args,{timeout=180000,maxBuffer=16*1024*1024}={}){
   return result.stdout;
 }
 function askSmith(prompt){
-  const output=run("bash",[SMITH,"run","--format","json",prompt],{timeout:240000,maxBuffer:32*1024*1024});
-  return parseSmithEvents(output);
+  let lastError=null;
+  for(let attempt=1;attempt<=3;attempt++){
+    try{
+      const output=run("bash",[SMITH,"run","--format","json",prompt],{timeout:240000,maxBuffer:32*1024*1024});
+      return parseSmithEvents(output);
+    }catch(error){ lastError=error; }
+  }
+  throw lastError || new Error("Smith no respondió después de tres intentos");
 }
 function searchYoutube(query){
   const output=run(YTDLP,["--dump-json","--skip-download","--no-warnings","--playlist-end","10",`ytsearch10:${query}`],{timeout:180000,maxBuffer:48*1024*1024});

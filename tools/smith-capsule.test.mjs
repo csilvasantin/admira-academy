@@ -6,6 +6,7 @@ import { readFile } from "node:fs/promises";
 const launchRunner=await readFile(new URL("./run-smith-capsule.sh",import.meta.url),"utf8");
 const launchInstaller=await readFile(new URL("./install-smith-capsule.sh",import.meta.url),"utf8");
 const launchPlist=await readFile(new URL("./com.admira.smith-capsule.plist",import.meta.url),"utf8");
+const capsuleRunner=await readFile(new URL("./smith-capsule.mjs",import.meta.url),"utf8");
 
 test("normaliza las variantes de URL de YouTube",()=>{
   assert.equal(youtubeId("https://youtu.be/TPBW7of4mkQ"),"TPBW7of4mkQ");
@@ -47,4 +48,9 @@ test("launchd ejecuta una copia fuera de Documents con runtime explícito",()=>{
   assert.match(launchRunner,/\/opt\/homebrew\/bin\/node/);
   assert.match(launchPlist,/Library\/Application Support\/Admira\/SmithCapsule\/run-smith-capsule\.sh/);
   assert.match(launchPlist,/\/opt\/homebrew\/bin:\/usr\/local\/bin/);
+});
+
+test("una respuesta vacía de Grok se reintenta sin publicar una cápsula parcial",()=>{
+  assert.match(capsuleRunner,/for\(let attempt=1;attempt<=3;attempt\+\+\)/);
+  assert.match(capsuleRunner,/throw lastError \|\| new Error\("Smith no respondió después de tres intentos"\)/);
 });
