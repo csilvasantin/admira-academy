@@ -64,6 +64,13 @@
     const scheduledAt=nextBoundary(value), lesson=lessonAt(scheduledAt);
     return {...lesson,slot:slotAt(scheduledAt),slotLabel:slotLabel(scheduledAt),scheduledAt};
   }
+  function autoLaunchTransition(launch,cooldown,now,attemptedKey=""){
+    if(!launch) return {due:false,key:""};
+    const boundary=Number(cooldown), instant=Number(now);
+    if(!Number.isFinite(boundary) || boundary<=0 || !Number.isFinite(instant) || instant<boundary) return {due:false,key:""};
+    const key=`${String(launch.launchId || launch.targetSlotId || "launch")}:${boundary}`;
+    return {due:key!==String(attemptedKey || ""),key};
+  }
   function schedule(value,count=3){
     const start=validDate(value); start.setMinutes(0,0,0);
     return Array.from({length:Math.max(1,Math.min(6,Number(count)||3))},(_item,index)=>{
@@ -81,5 +88,5 @@
     return {counts,total,spread,balanced:total>=3 && spread<=1,label:total===0 ? "Aún sin medir" : spread<=1 ? "Equilibrio activo" : "Dimensión por reforzar"};
   }
 
-  return {HOUR,ANCHOR,DIMENSIONS,epochSlot,dimensionAt,lessonAt,slotAt,slotLabel,nextBoundary,countdown,nextCapsule,schedule,completionId,balance};
+  return {HOUR,ANCHOR,DIMENSIONS,epochSlot,dimensionAt,lessonAt,slotAt,slotLabel,nextBoundary,countdown,nextCapsule,autoLaunchTransition,schedule,completionId,balance};
 });

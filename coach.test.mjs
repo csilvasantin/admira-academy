@@ -43,6 +43,19 @@ test("the lesson catalog is concrete, deterministic and balanced across three di
   assert.equal(result.total,3); assert.equal(result.balanced,true); assert.equal(result.counts.negocio,1);
 });
 
+test("the cooldown crossing launches once and keeps manual recovery available",()=>{
+  const launch={launchId:"coach-launch-1",targetSlotId:42}, boundary=10_000;
+  const early=C.autoLaunchTransition(launch,boundary,boundary-1,"");
+  assert.equal(early.due,false); assert.equal(early.key,"");
+  const first=C.autoLaunchTransition(launch,boundary,boundary,"");
+  assert.equal(first.due,true); assert.equal(first.key,"coach-launch-1:10000");
+  const repeated=C.autoLaunchTransition(launch,boundary,boundary+60_000,first.key);
+  assert.equal(repeated.due,false); assert.equal(repeated.key,first.key);
+  assert.match(js,/launchNextCapsule\(\{automatic:true\}\)/);
+  assert.match(js,/El disparo automático falló/);
+  assert.match(js,/addEventListener\("click",\(\)=>launchNextCapsule\(\{automatic:false\}\)\)/);
+});
+
 test("only a Yokup-authoritative completion enters counselor detail and Highscore",()=>{
   const completedAt="2026-08-09T09:00:00.000Z";
   const states={coach:{records:{silicio:{ceo:{completions:[

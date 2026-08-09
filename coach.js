@@ -6,7 +6,7 @@
   const $=(selector,root=document)=>root.querySelector(selector);
   const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
   const params=new URLSearchParams(location.search);
-  let audience=A.audience(params.get("audiencia")), agentId=A.council(params.get("id")).id, visibleSlot="", sourceRequest=0, progressRequest=0, launching=false;
+  let audience=A.audience(params.get("audiencia")), agentId=A.council(params.get("id")).id, visibleSlot="", sourceRequest=0, progressRequest=0, launching=false, autoLaunchAttempted="";
   const PROGRESS_STEPS=[
     {id:"opening_terminal",label:"Abrir terminal",progress:5},
     {id:"asking_grok",label:"Consultar Grok",progress:15},
@@ -184,8 +184,9 @@
     const agent=A.council(agentId), base={id:snapshot.id,audience,counselor:agent.id,slotId:snapshot.slot,lessonId:snapshot.lesson.id,dimension:snapshot.lesson.dimension,dimensionLabel:snapshot.lesson.dimensionLabel,title:snapshot.lesson.title,at:new Date().toISOString(),application,launchId:snapshot.launch?.launchId || "",yokup:{status:"pending"}};
     upsertCompletion(base); await syncCompletion(base);
   }
-  async function launchNextCapsule(){
-    const button=$("#launch-next-capsule"); launching=true; button.disabled=true; status("Yokup está fijando la franja para que Smith prepare la próxima cápsula…","info");
+  async function launchNextCapsule({automatic=false}={}){
+    if(launching) return;
+    const button=$("#launch-next-capsule"); launching=true; button.disabled=true; status(automatic ? "El reloj llegó a cero: Yokup está lanzando automáticamente la próxima cápsula…" : "Yokup está fijando la franja para que Smith prepare la próxima cápsula…","info");
     try{
       const response=await fetch(LAUNCH_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({audience})});
       const result=await response.json().catch(()=>({}));
@@ -195,10 +196,10 @@
       const capsuleAgent=A.council(result.capsula?.seat).id;
       if(result.counselor!==capsuleAgent) throw new Error("Yokup devolvió una silla incoherente con la cápsula");
       const requestedAt=Date.now();
-      agentId=capsuleAgent; syncUrl(); renderSelectors(); saveLaunch({...result,targetSlotId:Number(result.targetSlotId),requestedAt:new Date(requestedAt).toISOString(),nextLaunchAt:new Date(requestedAt+C.HOUR).toISOString()}); renderLesson();
+      agentId=capsuleAgent; syncUrl(); renderSelectors(); saveLaunch({...result,targetSlotId:Number(result.targetSlotId),requestedAt:new Date(requestedAt).toISOString(),nextLaunchAt:new Date(requestedAt+C.HOUR).toISOString()}); autoLaunchAttempted=""; renderLesson();
       renderAgentProgress(result.capsula); pollAgentProgress();
-      status(`Cápsula ${derived.dimensionLabel} encargada a Smith para ${A.council(agentId).role} · Yokup ${result.reused ? "reutilizó el registro" : "confirmó el registro"}`,"success");
-    }catch(error){ status(`No se pudo lanzar la cápsula: ${String(error.message || error).slice(0,180)}`,"error"); }
+      status(`${automatic ? "Lanzamiento automático" : "Cápsula"} · ${derived.dimensionLabel} · Smith trabaja para ${A.council(agentId).role} · Yokup ${result.reused ? "reutilizó el registro" : "confirmó el registro"}`,"success");
+    }catch(error){ status(`${automatic ? "El disparo automático falló" : "No se pudo lanzar la cápsula"}: ${String(error.message || error).slice(0,180)}`,"error"); }
     finally{ launching=false; tick(); }
   }
   async function importSiteSource(event){
@@ -219,12 +220,14 @@
   }
   function tick(){
     const hourly=current(), next=C.nextCapsule(hourly.now), shown=active();
-    const launched=selectedLaunch(), cooldown=Date.parse(launched?.nextLaunchAt || "") || ((Date.parse(launched?.launchedAt || "") || 0)+C.HOUR), left=Math.max(0,cooldown-Date.now()), button=$("#launch-next-capsule");
+    const launched=selectedLaunch(), cooldown=Date.parse(launched?.nextLaunchAt || "") || ((Date.parse(launched?.launchedAt || "") || 0)+C.HOUR), now=Date.now(), left=Math.max(0,cooldown-now), button=$("#launch-next-capsule");
+    const transition=C.autoLaunchTransition(launched,cooldown,now,autoLaunchAttempted);
+    if(transition.due && !launching){ autoLaunchAttempted=transition.key; void launchNextCapsule({automatic:true}); }
     if(left>0){
       const minutes=Math.floor(left/60000), seconds=Math.floor((left%60000)/1000);
       $("#countdown").textContent=`${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
       $("#next-dimension").textContent=C.DIMENSIONS.find(item=>item.id===launched.dimension)?.label || next.dimensionLabel;
-      $("#launch-hint").textContent="Encargo activo · nueva ventana al llegar a 00:00";
+      $("#launch-hint").textContent="Encargo activo · lanzamiento automático al llegar a 00:00";
     }else{
       $("#countdown").textContent=C.countdown(hourly.now).label; $("#next-dimension").textContent=next.dimensionLabel;
       $("#launch-hint").textContent=`Smith preparará la cápsula de las ${String(next.scheduledAt.getHours()).padStart(2,"0")}:00`;
@@ -235,7 +238,7 @@
   $("#student-select").addEventListener("change",event=>{ agentId=A.council(event.target.value).id; syncUrl(); renderSelectors(); renderLesson(); loadSources(); pollAgentProgress(); });
   $$('[data-audience]').forEach(button=>button.addEventListener("click",()=>{ audience=A.audience(button.dataset.audience); syncUrl(); renderSelectors(); renderLesson(); loadSources(); pollAgentProgress(); }));
   $("#complete-lesson").addEventListener("click",completeLesson);
-  $("#launch-next-capsule").addEventListener("click",launchNextCapsule);
+  $("#launch-next-capsule").addEventListener("click",()=>launchNextCapsule({automatic:false}));
   $("#source-import-form").addEventListener("submit",importSiteSource);
   window.addEventListener("storage",renderLesson);
   syncUrl(); renderSelectors(); renderLesson(); loadSources(); renderAgentProgress(null); pollAgentProgress(); tick(); setInterval(tick,1000); setInterval(pollAgentProgress,2000);
