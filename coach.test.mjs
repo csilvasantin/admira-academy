@@ -56,7 +56,8 @@ test("only a Yokup-authoritative completion enters counselor detail and Highscor
 test("the Coach exposes learner, application, balance, schedule and honest verification copy",()=>{
   assert.match(html,/Tres capacidades/); assert.match(html,/Tecnología → Creatividad → Negocio/);
   assert.match(html,/id="student-select"/); assert.match(html,/id="application"/); assert.match(html,/id="balance-grid"/); assert.match(html,/id="schedule"/);
-  assert.match(html,/id="launch-next-capsule"/); assert.match(html,/Lanzar próxima cápsula/); assert.match(html,/Adelantar y registrar en Yokup/);
+  assert.match(html,/id="launch-next-capsule"/); assert.match(html,/Encargar a Smith/); assert.match(html,/Adelantar y registrar en Yokup/);
+  assert.match(html,/Smith rastrea YouTube, importa la fuente y condensa el conocimiento en Pixeria/);
   assert.match(html,/Solo las verificadas por Yokup suman en Highscore/); assert.match(html,/no es una acreditación académica/);
   assert.match(css,/@media\(max-width:720px\)/); assert.match(js,/admira-academy-coach-v1/); assert.match(js,/\/api\/coach-log/); assert.match(js,/\/api\/coach-launch/);
   assert.match(js,/saveLaunch/); assert.match(js,/C\.nextCapsule/); assert.match(js,/launchNextCapsule/);

@@ -27,14 +27,14 @@
     var chip = document.getElementById("capsula-tema");
     if (chip) { chip.textContent = capsula.tema_nombre || ""; chip.hidden = !capsula.tema_nombre;
                 chip.setAttribute("data-tema", capsula.tema || ""); }
-    pon("capsula-fuente", capsula.source === "academia/leccion" ? "Lección de la Academia" : "Material del Consejo");
+    pon("capsula-fuente", capsula.source === "pixeria/capsula" ? "Cápsula verificada por Smith · Pixeria" : "Lección de la Academia · Smith preparando fuente");
     pon("capsula-silla", capsula.role ? capsula.role + " · " + capsula.alias : "");
     pon("capsula-pieza", capsula.title);
     pon("capsula-nota", capsula.note || "");
     var cta = document.getElementById("capsula-cta");
     if (cta) {
       cta.href = capsula.url || "#formacion";
-      cta.textContent = (capsula.source === "academia/leccion" ? "Ver la lección" : "Ver la pieza") + " →";
+      cta.textContent = (capsula.source === "pixeria/capsula" ? "Ver el vídeo fuente" : "Ver la lección") + " →";
     }
     seccion.hidden = false;
   }

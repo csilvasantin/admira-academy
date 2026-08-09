@@ -106,7 +106,7 @@
     upsertCompletion(base); await syncCompletion(base);
   }
   async function launchNextCapsule(){
-    const button=$("#launch-next-capsule"); button.disabled=true; status("Lanzando la próxima cápsula y registrándola en Yokup…","info");
+    const button=$("#launch-next-capsule"); button.disabled=true; status("Yokup está fijando la franja para que Smith prepare la próxima cápsula…","info");
     try{
       const response=await fetch(LAUNCH_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({audience})});
       const result=await response.json().catch(()=>({}));
@@ -116,7 +116,7 @@
       const capsuleAgent=A.council(result.capsula?.seat).id;
       if(result.counselor!==capsuleAgent) throw new Error("Yokup devolvió una silla incoherente con la cápsula");
       agentId=capsuleAgent; syncUrl(); renderSelectors(); saveLaunch({...result,targetSlotId:Number(result.targetSlotId)}); renderLesson();
-      status(`Cápsula ${derived.dimensionLabel} lanzada para ${A.council(agentId).role} · Yokup ${result.reused ? "reutilizó el registro" : "confirmó el registro"}`,"success");
+      status(`Cápsula ${derived.dimensionLabel} encargada a Smith para ${A.council(agentId).role} · Yokup ${result.reused ? "reutilizó el registro" : "confirmó el registro"}`,"success");
     }catch(error){ status(`No se pudo lanzar la cápsula: ${String(error.message || error).slice(0,180)}`,"error"); }
     finally{ button.disabled=false; tick(); }
   }
@@ -124,7 +124,7 @@
     const hourly=current(), next=C.nextCapsule(hourly.now), shown=active();
     $("#countdown").textContent=C.countdown(hourly.now).label; $("#next-dimension").textContent=next.dimensionLabel;
     const launched=selectedLaunch(), same=Number(launched?.targetSlotId)===next.slot;
-    $("#launch-hint").textContent=same ? "Ya lanzada · abrir de nuevo no duplica" : `Adelantar la cápsula de las ${String(next.scheduledAt.getHours()).padStart(2,"0")}:00`;
+    $("#launch-hint").textContent=same ? "Ya encargada · abrir de nuevo no duplica" : `Smith preparará la cápsula de las ${String(next.scheduledAt.getHours()).padStart(2,"0")}:00`;
     if(visibleSlot && shown.slot!==visibleSlot) renderLesson();
   }
   $("#student-select").addEventListener("change",event=>{ agentId=A.council(event.target.value).id; syncUrl(); renderSelectors(); renderLesson(); });
