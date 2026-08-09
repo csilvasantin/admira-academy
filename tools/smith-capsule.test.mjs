@@ -4,6 +4,8 @@ import { eligibleCandidates, findCapsule, findVideo, hasTags, parseSmithEvents, 
 import { readFile } from "node:fs/promises";
 
 const launchRunner=await readFile(new URL("./run-smith-capsule.sh",import.meta.url),"utf8");
+const launchInstaller=await readFile(new URL("./install-smith-capsule.sh",import.meta.url),"utf8");
+const launchPlist=await readFile(new URL("./com.admira.smith-capsule.plist",import.meta.url),"utf8");
 
 test("normaliza las variantes de URL de YouTube",()=>{
   assert.equal(youtubeId("https://youtu.be/TPBW7of4mkQ"),"TPBW7of4mkQ");
@@ -38,4 +40,11 @@ test("deduplica por id de YouTube y enlaza cápsula con vídeo",()=>{
 test("el proceso libera el lock al apagarse",()=>{
   assert.match(launchRunner,/trap 'rmdir "\$LOCK_DIR"/);
   assert.doesNotMatch(launchRunner,/exec \/usr\/bin\/env node/);
+});
+
+test("launchd ejecuta una copia fuera de Documents con runtime explícito",()=>{
+  assert.match(launchInstaller,/Library\/Application Support\/Admira\/SmithCapsule/);
+  assert.match(launchRunner,/\/opt\/homebrew\/bin\/node/);
+  assert.match(launchPlist,/Library\/Application Support\/Admira\/SmithCapsule\/run-smith-capsule\.sh/);
+  assert.match(launchPlist,/\/opt\/homebrew\/bin:\/usr\/local\/bin/);
 });
