@@ -13,9 +13,68 @@
   <link rel="stylesheet" href="/academy.css">
   <script src="/academy-training-core.js" defer></script>
   <script src="/academy.js" defer></script>
+  <script src="/academy-cuadratica.js" defer></script>
 </head>
 <body id="top">
   <a class="skip-link" href="#academia">Saltar a la academia</a>
+
+  <!-- ══ INTERFAZ CUADRÁTICA · el marco común del universo Admira ══
+       Opciones a la izquierda, avanzado a la derecha, modo experto abajo en
+       horizontal. Plegado por defecto: la academia se lee sin estorbos. -->
+  <div class="cuad-ico izq">
+    <button type="button" id="cuad-op" aria-expanded="false" aria-controls="riel-op" title="Opciones" aria-label="Abrir opciones">☰</button>
+    <button type="button" id="cuad-ir" title="Ir a la academia" aria-label="Ir a la academia">🎓</button>
+    <button type="button" id="cuad-arriba" title="Volver arriba" aria-label="Volver arriba">↑</button>
+  </div>
+  <div class="cuad-ico der">
+    <button type="button" id="cuad-av" aria-expanded="false" aria-controls="riel-av" title="Avanzado" aria-label="Abrir avanzado">⚙︎</button>
+    <button type="button" id="cuad-ex" aria-expanded="false" aria-controls="barra-experto" title="Modo experto" aria-label="Abrir modo experto">&lt;/&gt;</button>
+  </div>
+  <div class="cuad-fondo" id="cuad-fondo" aria-hidden="true"></div>
+
+  <aside class="riel izq" id="riel-op" aria-label="Opciones" aria-hidden="true">
+    <h2>Opciones</h2>
+    <div class="grupo">La academia</div>
+    <a href="#academia">Entrar en la academia</a>
+    <a href="#formacion">Ventana de formación</a>
+    <a href="#itinerario">Itinerario</a>
+    <a href="#como-funciona">Cómo funciona</a>
+    <div class="grupo">El Consejo</div>
+    <a href="#consejo">Los consejeros</a>
+    <a href="/consejeros/">Detalle de cada uno</a>
+    <a href="#carbono">Carbono</a>
+    <div class="grupo">Fuera de aquí</div>
+    <a href="https://www.admiranext.com/academia" target="_blank" rel="noopener">Formación en abierto ↗</a>
+    <a href="https://www.admira.live/13rue/" target="_blank" rel="noopener">La Incubadora ↗</a>
+    <a href="/help/">Ayuda</a>
+    <div class="pie">Opciones · lo que se usa a diario</div>
+  </aside>
+
+  <aside class="riel der" id="riel-av" aria-label="Avanzado" aria-hidden="true">
+    <h2>Avanzado</h2>
+    <div class="grupo">Formación</div>
+    <a href="/plataforma/">Plataforma</a>
+    <button class="op" type="button" data-cuad-ir="#formacion">Lanzar una cápsula</button>
+    <button class="op" type="button" id="av-copiar">Copiar enlace de esta vista</button>
+    <div class="grupo">Ver de otra forma</div>
+    <button class="op" type="button" id="av-contraste">Alternar contraste alto</button>
+    <button class="op" type="button" id="av-motion">Reducir movimiento</button>
+    <div class="grupo">La casa</div>
+    <a href="https://www.admiranext.com/normativa" target="_blank" rel="noopener">Normativa ↗</a>
+    <a href="https://yokup.com/highscore" target="_blank" rel="noopener">Highscore ↗</a>
+    <div class="pie">Avanzado · lo que se usa de vez en cuando</div>
+  </aside>
+
+  <div class="experto" id="barra-experto" aria-label="Modo experto" aria-hidden="true">
+    <div class="fila">
+      <span class="tit">Modo experto</span>
+      <a class="ex" href="https://admira.academy/api/pixeria-import" target="_blank" rel="noopener">API importación</a>
+      <a class="ex" href="/academy-training-core.js" target="_blank" rel="noopener">training-core.js</a>
+      <a class="ex" href="https://www.admira.live/13rue/incubadora.json" target="_blank" rel="noopener">incubadora.json</a>
+      <button class="ex" type="button" id="ex-estado">Estado en consola</button>
+      <span class="dato" id="ex-dato">—</span>
+    </div>
+  </div>
 
   <header class="site-header">
     <div class="wrap header-inner">
