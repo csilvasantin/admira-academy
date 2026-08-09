@@ -12,6 +12,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/academy.css">
   <script src="/academy-training-core.js" defer></script>
+  <script src="/academy-capsula.js" defer></script>
   <script src="/academy.js" defer></script>
 </head>
 <body id="top">
@@ -154,6 +155,22 @@
           </div>
           <p class="source-note">Fuente: definición operativa del Consejo publicada en Yokup. La preparación mostrada procede únicamente de evidencias guardadas en este navegador.</p>
         </article>
+
+        <!-- CÁPSULA DE LA HORA. El contenido no se decide aquí: lo elige y lo sella por
+             hora el worker de Yokup entre el material que YA existe (el Stock de pixeria
+             etiquetado con esa silla, #formacion primero). Preguntar también dispara: si a
+             las HH:00 nadie había pasado por el worker, esta visita abre la hora. -->
+        <section class="hour-capsule" id="capsula" aria-labelledby="capsula-title" hidden>
+          <div class="capsule-head">
+            <p class="kicker" id="capsula-title">Cápsula de esta hora</p>
+            <span class="capsule-hour" id="capsula-hora"></span>
+            <span class="capsule-source" id="capsula-fuente"></span>
+          </div>
+          <p class="capsule-seat" id="capsula-silla"></p>
+          <h3 class="capsule-title" id="capsula-pieza"></h3>
+          <p class="capsule-note" id="capsula-nota"></p>
+          <a class="capsule-cta" id="capsula-cta" href="#formacion" rel="noopener">Abrir la cápsula →</a>
+        </section>
 
         <section class="training-lab" id="formacion" aria-labelledby="training-title">
           <div class="training-head">
