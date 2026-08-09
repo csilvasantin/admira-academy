@@ -48,9 +48,16 @@ test("launchd ejecuta una copia fuera de Documents con runtime explícito",()=>{
   assert.match(launchRunner,/\/opt\/homebrew\/bin\/node/);
   assert.match(launchPlist,/Library\/Application Support\/Admira\/SmithCapsule\/run-smith-capsule\.sh/);
   assert.match(launchPlist,/\/opt\/homebrew\/bin:\/usr\/local\/bin/);
+  assert.match(launchPlist,/<key>StartInterval<\/key><integer>30<\/integer>/);
 });
 
 test("una respuesta vacía de Grok se reintenta sin publicar una cápsula parcial",()=>{
   assert.match(capsuleRunner,/for\(let attempt=1;attempt<=3;attempt\+\+\)/);
   assert.match(capsuleRunner,/throw lastError \|\| new Error\("Smith no respondió después de tres intentos"\)/);
+});
+
+test("Smith informa cada hito real a Yokup antes de avanzar",()=>{
+  assert.match(capsuleRunner,/academy\/capsula\/smith\/progress/);
+  for(const stage of ["opening_terminal","asking_grok","searching_youtube","selecting_source","transcribing","synthesizing","importing_pixeria","publishing_capsule","verifying_yokup","error"]) assert.match(capsuleRunner,new RegExp(`reportProgress\\([^,]+,"${stage}"`));
+  assert.match(capsuleRunner,/La telemetría nunca debe impedir que la cápsula termine/);
 });

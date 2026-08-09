@@ -2,11 +2,22 @@
   "use strict";
   const A=window.AcademyAdvisorCore, C=window.AcademyCoachCore;
   if(!A || !C) throw new Error("El núcleo del Coach no está disponible");
-  const STORAGE_KEY="admira-academy-coach-v1", LOG_ENDPOINT="/api/coach-log", LAUNCH_ENDPOINT="/api/coach-launch", SOURCE_ENDPOINT="/api/coach-source";
+  const STORAGE_KEY="admira-academy-coach-v1", LOG_ENDPOINT="/api/coach-log", LAUNCH_ENDPOINT="/api/coach-launch", PROGRESS_ENDPOINT="/api/coach-progress", SOURCE_ENDPOINT="/api/coach-source";
   const $=(selector,root=document)=>root.querySelector(selector);
   const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
   const params=new URLSearchParams(location.search);
-  let audience=A.audience(params.get("audiencia")), agentId=A.council(params.get("id")).id, visibleSlot="", sourceRequest=0;
+  let audience=A.audience(params.get("audiencia")), agentId=A.council(params.get("id")).id, visibleSlot="", sourceRequest=0, progressRequest=0, launching=false;
+  const PROGRESS_STEPS=[
+    {id:"opening_terminal",label:"Abrir terminal",progress:5},
+    {id:"asking_grok",label:"Consultar Grok",progress:15},
+    {id:"searching_youtube",label:"Buscar YouTube",progress:30},
+    {id:"selecting_source",label:"Elegir fuente",progress:42},
+    {id:"transcribing",label:"Transcribir",progress:55},
+    {id:"synthesizing",label:"Interpretar",progress:68},
+    {id:"importing_pixeria",label:"Importar vídeo",progress:82},
+    {id:"publishing_capsule",label:"Publicar cápsula",progress:92},
+    {id:"verifying_yokup",label:"Verificar Yokup",progress:97}
+  ];
 
   function escapeHtml(value){ return String(value ?? "").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"})[character]); }
   function load(){
@@ -42,6 +53,29 @@
   }
   function sourceStatus(message,type="info"){
     const node=$("#source-status"); node.textContent=message; node.dataset.type=type; node.hidden=false;
+  }
+  function progressHourStart(){
+    const slot=C.slotAt(new Date()), launch=selectedLaunch(), target=Number(launch?.targetSlotId);
+    return Number.isInteger(target) && target>=slot-1 && target<=slot+1 ? target*C.HOUR : slot*C.HOUR;
+  }
+  function renderAgentProgress(capsule){
+    const smith=capsule?.smith || {}, statusValue=smith.status || "pending", stage=smith.stage || "queued", progress=statusValue==="verified" ? 100 : Math.max(0,Math.min(99,Number(smith.progress)||0));
+    const node=$("#agent-progress"), title={queued:"Esperando a Smith",opening_terminal:"Abriendo terminal",asking_grok:"Grok prepara la búsqueda",searching_youtube:"Buscando en YouTube",selecting_source:"Eligiendo la mejor fuente",transcribing:"Transcribiendo el vídeo",synthesizing:"Interpretando el conocimiento",importing_pixeria:"Importando en Pixeria",publishing_capsule:"Publicando la cápsula",verifying_yokup:"Verificando en Yokup",verified:"Cápsula terminada",error:"Smith necesita reintentar"}[stage] || "Smith está trabajando";
+    node.dataset.state=statusValue;
+    $("#agent-progress-title").textContent=title; $("#agent-progress-percent").textContent=`${progress}%`; $("#agent-progress-bar").style.width=`${progress}%`;
+    $("#agent-progress-detail").textContent=smith.detail || "Yokup mostrará aquí cada hito real del agente.";
+    $("#agent-progress-steps").innerHTML=PROGRESS_STEPS.map(item=>{ const current=item.id===stage, done=statusValue==="verified" || item.progress<progress || (item.progress===progress && !current); return `<li class="${current ? "current" : done ? "done" : ""}" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</li>`; }).join("");
+    const updated=Number(smith.updated_at || capsule?.at || 0);
+    $("#agent-progress-time").textContent=updated ? `Último hito confirmado por Yokup · ${new Intl.DateTimeFormat("es-ES",{hour:"2-digit",minute:"2-digit",second:"2-digit"}).format(new Date(updated))}` : "Esperando el primer latido de Smith";
+  }
+  async function pollAgentProgress(){
+    const request=++progressRequest, hourStart=progressHourStart();
+    try{
+      const response=await fetch(`${PROGRESS_ENDPOINT}?hourStart=${hourStart}`,{headers:{Accept:"application/json"},cache:"no-store"});
+      const result=await response.json().catch(()=>({}));
+      if(request!==progressRequest) return;
+      if(response.ok && result.ok && result.capsula) renderAgentProgress(result.capsula);
+    }catch(_error){ /* Se conserva el último hito visible; el polling reintentará. */ }
   }
   function splitCapsule(summary){
     const text=String(summary || "").replace(/\r/g,"").trim();
@@ -140,7 +174,7 @@
     upsertCompletion(base); await syncCompletion(base);
   }
   async function launchNextCapsule(){
-    const button=$("#launch-next-capsule"); button.disabled=true; status("Yokup está fijando la franja para que Smith prepare la próxima cápsula…","info");
+    const button=$("#launch-next-capsule"); launching=true; button.disabled=true; status("Yokup está fijando la franja para que Smith prepare la próxima cápsula…","info");
     try{
       const response=await fetch(LAUNCH_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({audience})});
       const result=await response.json().catch(()=>({}));
@@ -149,10 +183,12 @@
       if(!Number.isInteger(Number(result.targetSlotId)) || result.dimension!==derived.dimension || result.lessonId!==derived.id) throw new Error("Yokup devolvió una cápsula incoherente con el ciclo");
       const capsuleAgent=A.council(result.capsula?.seat).id;
       if(result.counselor!==capsuleAgent) throw new Error("Yokup devolvió una silla incoherente con la cápsula");
-      agentId=capsuleAgent; syncUrl(); renderSelectors(); saveLaunch({...result,targetSlotId:Number(result.targetSlotId)}); renderLesson();
+      const launchedAt=Date.parse(result.launchedAt) || Date.now();
+      agentId=capsuleAgent; syncUrl(); renderSelectors(); saveLaunch({...result,targetSlotId:Number(result.targetSlotId),nextLaunchAt:new Date(launchedAt+C.HOUR).toISOString()}); renderLesson();
+      renderAgentProgress(result.capsula); pollAgentProgress();
       status(`Cápsula ${derived.dimensionLabel} encargada a Smith para ${A.council(agentId).role} · Yokup ${result.reused ? "reutilizó el registro" : "confirmó el registro"}`,"success");
     }catch(error){ status(`No se pudo lanzar la cápsula: ${String(error.message || error).slice(0,180)}`,"error"); }
-    finally{ button.disabled=false; tick(); }
+    finally{ launching=false; tick(); }
   }
   async function importSiteSource(event){
     event.preventDefault();
@@ -172,16 +208,24 @@
   }
   function tick(){
     const hourly=current(), next=C.nextCapsule(hourly.now), shown=active();
-    $("#countdown").textContent=C.countdown(hourly.now).label; $("#next-dimension").textContent=next.dimensionLabel;
-    const launched=selectedLaunch(), same=Number(launched?.targetSlotId)===next.slot;
-    $("#launch-hint").textContent=same ? "Ya encargada · abrir de nuevo no duplica" : `Smith preparará la cápsula de las ${String(next.scheduledAt.getHours()).padStart(2,"0")}:00`;
+    const launched=selectedLaunch(), cooldown=Date.parse(launched?.nextLaunchAt || "") || ((Date.parse(launched?.launchedAt || "") || 0)+C.HOUR), left=Math.max(0,cooldown-Date.now()), button=$("#launch-next-capsule");
+    if(left>0){
+      const minutes=Math.floor(left/60000), seconds=Math.floor((left%60000)/1000);
+      $("#countdown").textContent=`${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")}`;
+      $("#next-dimension").textContent=C.DIMENSIONS.find(item=>item.id===launched.dimension)?.label || next.dimensionLabel;
+      $("#launch-hint").textContent="Encargo activo · nueva ventana al llegar a 00:00";
+    }else{
+      $("#countdown").textContent=C.countdown(hourly.now).label; $("#next-dimension").textContent=next.dimensionLabel;
+      $("#launch-hint").textContent=`Smith preparará la cápsula de las ${String(next.scheduledAt.getHours()).padStart(2,"0")}:00`;
+    }
+    button.disabled=launching || left>0;
     if(visibleSlot && shown.slot!==visibleSlot) renderLesson();
   }
-  $("#student-select").addEventListener("change",event=>{ agentId=A.council(event.target.value).id; syncUrl(); renderSelectors(); renderLesson(); loadSources(); });
-  $$('[data-audience]').forEach(button=>button.addEventListener("click",()=>{ audience=A.audience(button.dataset.audience); syncUrl(); renderSelectors(); renderLesson(); loadSources(); }));
+  $("#student-select").addEventListener("change",event=>{ agentId=A.council(event.target.value).id; syncUrl(); renderSelectors(); renderLesson(); loadSources(); pollAgentProgress(); });
+  $$('[data-audience]').forEach(button=>button.addEventListener("click",()=>{ audience=A.audience(button.dataset.audience); syncUrl(); renderSelectors(); renderLesson(); loadSources(); pollAgentProgress(); }));
   $("#complete-lesson").addEventListener("click",completeLesson);
   $("#launch-next-capsule").addEventListener("click",launchNextCapsule);
   $("#source-import-form").addEventListener("submit",importSiteSource);
   window.addEventListener("storage",renderLesson);
-  syncUrl(); renderSelectors(); renderLesson(); loadSources(); tick(); setInterval(tick,1000);
+  syncUrl(); renderSelectors(); renderLesson(); loadSources(); renderAgentProgress(null); pollAgentProgress(); tick(); setInterval(tick,1000); setInterval(pollAgentProgress,2000);
 })();

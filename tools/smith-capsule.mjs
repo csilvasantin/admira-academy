@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 
 export const ENDPOINTS = Object.freeze({
   pending:"https://api.yokup.com/academy/capsula/smith/pending",
+  progress:"https://api.yokup.com/academy/capsula/smith/progress",
   result:"https://api.yokup.com/academy/capsula/smith/result",
   index:"https://pub-bf043a4daa3b43b7a0b769617729d074.r2.dev/stock/index.json",
   import:"https://admira.academy/api/pixeria-import",
@@ -66,6 +67,12 @@ async function jsonFetch(url,options={}){
 async function stockIndex(){
   const body=await jsonFetch(`${ENDPOINTS.index}?smith=${Date.now()}`,{cache:"no-store"});
   return Array.isArray(body) ? body : (Array.isArray(body.items) ? body.items : []);
+}
+async function reportProgress(job,stage,detail){
+  if(!job?.hour_start) return;
+  try{
+    await jsonFetch(ENDPOINTS.progress,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hourStart:Number(job.hour_start),stage,detail:clean(detail,240)})});
+  }catch(_error){ /* La telemetría nunca debe impedir que la cápsula termine. */ }
 }
 function run(command,args,{timeout=180000,maxBuffer=16*1024*1024}={}){
   const result=spawnSync(command,args,{encoding:"utf8",timeout,maxBuffer,env:process.env});
@@ -144,35 +151,49 @@ async function publishCapsule(video,candidate,job,knowledge){
   throw new Error("La cápsula no apareció en el índice público de Pixeria");
 }
 
+let activeJob=null;
 export async function processOne(){
   const pending=await jsonFetch(ENDPOINTS.pending,{cache:"no-store"});
   if(!pending.job) return {ok:true,idle:true,message:"Sin cápsulas pendientes"};
   const job=canonicalJob(pending.job);
+  activeJob=job;
+  await reportProgress(job,"opening_terminal","Abriendo el proceso local de Smith y conectando Grok CLI.");
+  await reportProgress(job,"asking_grok",`Grok está formulando la búsqueda para ${job.role} · ${job.alias}.`);
   const queryAnswer=askSmith(`Eres Smith, agente de formación. Formula UNA búsqueda de YouTube para encontrar un vídeo real y breve de ${job.alias} que enseñe ${job.tema_nombre} y conecte con la lección «${job.title}». Prioriza canales oficiales, entrevistas o charlas del propio protagonista. Máximo 5 minutos. Responde sólo JSON: {"query":"..."}`);
   const query=clean(queryAnswer.query,180);
   if(!query) throw new Error("Smith no formuló una búsqueda");
+  await reportProgress(job,"searching_youtube",`Buscando en YouTube: ${query}`);
   let candidates=eligibleCandidates(searchYoutube(query));
   if(!candidates.length) candidates=eligibleCandidates(searchYoutube(`${job.alias} ${job.tema_nombre} interview short`));
   if(!candidates.length) throw new Error("YouTube no devolvió vídeos de 30 segundos a 5 minutos con transcripción verificable");
   const compact=candidates.slice(0,8).map(({description,...item})=>item);
+  await reportProgress(job,"selecting_source",`Grok está comparando ${compact.length} fuentes válidas de YouTube.`);
   const selection=askSmith(`Elige el vídeo que mejor forma a la silla ${job.role} · ${job.alias} en ${job.tema_nombre}. Sólo puedes elegir uno de esta lista y debes evitar homenajes, resúmenes de terceros o contenido que no sea realmente del protagonista. Candidatos: ${JSON.stringify(compact)}. Responde sólo JSON: {"videoId":"id exacto de la lista","reason":"criterio factual en una frase"}`);
   const candidate=candidates.find(item=>item.videoId===selection.videoId);
   if(!candidate) throw new Error("Smith eligió un vídeo que no estaba entre los candidatos validados");
+  await reportProgress(job,"transcribing",`Transcribiendo «${candidate.title}» (${Math.round(candidate.duration)} s).`);
   const transcript=transcriptFor(candidate) || candidate.description;
   if(clean(transcript,20000).length<80) throw new Error("El vídeo no aporta transcripción ni descripción suficiente");
+  await reportProgress(job,"synthesizing","Grok está interpretando la transcripción y escribiendo la cápsula.");
   const knowledge=askSmith(`Convierte esta fuente en UNA cápsula de conocimiento para ${job.role} · ${job.alias}, dimensión ${job.tema_nombre}, lección «${job.title}». Usa sólo lo que aparece en la transcripción/descripción. La cápsula debe tener entre 400 y 900 caracteres, explicar una idea aplicable y no atribuir frases literales si no constan. FUENTE: ${candidate.title}. TEXTO: ${clean(transcript,18000)}. Responde sólo JSON: {"title":"título de 4 a 10 palabras","capsule":"texto en español"}`);
   const capsuleText=clean(knowledge.capsule,900);
   if(capsuleText.length<400) throw new Error("Smith devolvió una cápsula demasiado corta");
   if(process.env.SMITH_CAPSULE_DRY_RUN==="1") return {ok:true,dryRun:true,job,candidate,knowledge:{...knowledge,capsule:capsuleText}};
+  await reportProgress(job,"importing_pixeria","Importando el vídeo y confirmando sus etiquetas en Pixeria.");
   const video=await importVideo(candidate,job,selection);
+  await reportProgress(job,"publishing_capsule","Publicando la cápsula enlazada al vídeo en Pixeria.");
   const capsule=await publishCapsule(video,candidate,job,{...knowledge,capsule:capsuleText});
+  await reportProgress(job,"verifying_yokup","Yokup está verificando vídeo, cápsula, etiquetas y enlace público.");
   const accepted=await jsonFetch(ENDPOINTS.result,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hourStart:Number(job.hour_start),sourceUrl:candidate.url,videoAssetId:video.id,capsuleAssetId:capsule.id})});
   return {ok:true,idle:false,reused:Boolean(accepted.reused),hourStart:job.hour_start,seat:job.seat,dimension:job.tema,sourceUrl:candidate.url,videoAssetId:video.id,capsuleAssetId:capsule.id};
 }
 
 async function main(){
   try{ const result=await processOne(); process.stdout.write(JSON.stringify(result)+"\n"); }
-  catch(error){ process.stderr.write(`Smith cápsula ERROR · ${clean(error?.stack || error,1800)}\n`); process.exitCode=1; }
+  catch(error){
+    await reportProgress(activeJob,"error",`Smith se ha detenido: ${clean(error?.message || error,200)}`);
+    process.stderr.write(`Smith cápsula ERROR · ${clean(error?.stack || error,1800)}\n`); process.exitCode=1;
+  }
 }
 
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href) await main();
