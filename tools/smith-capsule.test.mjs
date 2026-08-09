@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { eligibleCandidates, findCapsule, findVideo, hasTags, parseSmithEvents, youtubeId } from "./smith-capsule.mjs";
+import { dimensionTag, eligibleCandidates, findCapsule, findVideo, hasTags, parseSmithEvents, youtubeId } from "./smith-capsule.mjs";
 import { readFile } from "node:fs/promises";
 
 const launchRunner=await readFile(new URL("./run-smith-capsule.sh",import.meta.url),"utf8");
@@ -32,10 +32,18 @@ test("extrae únicamente el último texto JSON del CLI de Smith",()=>{
 
 test("deduplica por id de YouTube y enlaza cápsula con vídeo",()=>{
   const video={id:"video-1",type:"video",prompt:"https://youtu.be/TPBW7of4mkQ",tags:["formacion","stevewozniak"]};
-  const capsule={id:"capsule-1",type:"capsula",externalRef:"video-1",tags:["formacion","stevewozniak"]};
+  const capsule={id:"capsule-1",type:"capsula",externalRef:"video-1",tags:["formacion","stevewozniak","tech"]};
   assert.equal(findVideo([video],"https://www.youtube.com/watch?v=TPBW7of4mkQ"),video);
-  assert.equal(findCapsule([capsule],"video-1","stevewozniak"),capsule);
+  assert.equal(findCapsule([capsule],"video-1","stevewozniak","tecnologia"),capsule);
   assert.equal(hasTags(capsule,["formacion","stevewozniak"]),true);
+});
+
+test("asigna el hashtag inglés canónico de cada dimensión",()=>{
+  assert.equal(dimensionTag("tecnologia"),"tech");
+  assert.equal(dimensionTag("creatividad"),"creativity");
+  assert.equal(dimensionTag("negocio"),"business");
+  assert.throws(()=>dimensionTag("otro"),/dimensión formativa canónica/);
+  assert.match(capsuleRunner,/tags:\["formacion",job\.training_tag,topicTag\]/);
 });
 
 test("el proceso libera el lock al apagarse",()=>{

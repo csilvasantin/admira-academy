@@ -21,8 +21,14 @@ const YTDLP=process.env.YT_DLP || "/opt/homebrew/bin/yt-dlp";
 const ORIGIN="https://admira.academy";
 const MAX_VIDEO_SECONDS=300;
 const MIN_VIDEO_SECONDS=30;
+const DIMENSION_TAGS=Object.freeze({tecnologia:"tech",creatividad:"creativity",negocio:"business"});
 
 function clean(value,limit=1000){ return String(value ?? "").replace(/\s+/g," ").trim().slice(0,limit); }
+export function dimensionTag(value){
+  const tag=DIMENSION_TAGS[String(value || "").toLowerCase()];
+  if(!tag) throw new Error("Yokup no devolvió una dimensión formativa canónica");
+  return tag;
+}
 export function youtubeId(value){
   const match=String(value || "").match(/(?:youtube\.com\/(?:watch\?.*?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i);
   return match ? match[1] : "";
@@ -50,8 +56,10 @@ export function findVideo(items,sourceUrl){
   const id=youtubeId(sourceUrl);
   return (items || []).find(item=>String(item?.type || "").toLowerCase()==="video" && youtubeId(item.prompt || item.sourceUrl || "")===id) || null;
 }
-export function findCapsule(items,videoAssetId,tag){
-  return (items || []).find(item=>["capsula","guion"].includes(String(item?.type || "").toLowerCase()) && String(item.externalRef || "")===String(videoAssetId) && hasTags(item,["formacion",tag])) || null;
+export function findCapsule(items,videoAssetId,tag,dimension=""){
+  const required=["formacion",tag];
+  if(dimension) required.push(dimensionTag(dimension));
+  return (items || []).find(item=>["capsula","guion"].includes(String(item?.type || "").toLowerCase()) && String(item.externalRef || "")===String(videoAssetId) && hasTags(item,required)) || null;
 }
 export function hasTags(item,required){
   const tags=new Set((Array.isArray(item?.tags) ? item.tags : []).map(value=>clean(value,30).toLowerCase()));
@@ -138,15 +146,16 @@ async function importVideo(candidate,job,selection){
   throw new Error("Pixeria no publicó el vídeo dentro de nueve minutos");
 }
 async function publishCapsule(video,candidate,job,knowledge){
-  let items=await stockIndex(), capsule=findCapsule(items,video.id,job.training_tag);
+  const topicTag=dimensionTag(job.tema);
+  let items=await stockIndex(), capsule=findCapsule(items,video.id,job.training_tag,job.tema);
   if(capsule) return capsule;
-  const result=await jsonFetch(ENDPOINTS.publish,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"capsula",motor:"Smith · Grok",prompt:candidate.url,title:clean(knowledge.title,180),comment:clean(knowledge.capsule,900),tags:["formacion",job.training_tag],externalRef:video.id,thumbnail:video.thumbnail || null})});
+  const result=await jsonFetch(ENDPOINTS.publish,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"capsula",motor:"Smith · Grok",prompt:candidate.url,title:clean(knowledge.title,180),comment:clean(knowledge.capsule,900),tags:["formacion",job.training_tag,topicTag],externalRef:video.id,thumbnail:video.thumbnail || null})});
   const id=String(result.id || "");
   if(!id) throw new Error("Pixeria no devolvió el id de la cápsula");
   for(let attempt=0;attempt<60;attempt++){
     await new Promise(resolve=>setTimeout(resolve,2000));
     capsule=(await stockIndex()).find(item=>item.id===id);
-    if(capsule && findCapsule([capsule],video.id,job.training_tag)) return capsule;
+    if(capsule && findCapsule([capsule],video.id,job.training_tag,job.tema)) return capsule;
   }
   throw new Error("La cápsula no apareció en el índice público de Pixeria");
 }
