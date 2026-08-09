@@ -1,4 +1,5 @@
 const YOKUP_ENDPOINT="https://api.yokup.com/academy/coach/completion";
+const YOKUP_HEALTH="https://api.yokup.com/academy/coach/health";
 const HOUR=60*60*1000;
 const COUNSELORS=new Set(["ceo","cto","coo","cfo","cco","cdo","cxo","cso"]);
 const AUDIENCES=new Set(["silicio","carbono"]);
@@ -6,6 +7,17 @@ const ALLOWED_ORIGINS=new Set(["https://admira.academy","https://www.admira.acad
 
 function json(body,status=200){ return new Response(JSON.stringify(body),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}}); }
 function allowed(origin){ return ALLOWED_ORIGINS.has(origin) || /^https:\/\/[a-z0-9]+\.(?:admira-academy|bits-and-atoms)\.pages\.dev$/.test(origin); }
+
+export async function onRequestGet({env}){
+  const token=String(env?.ACADEMY_COACH_TOKEN || "");
+  if(!token) return json({ok:false,error:"El registro Coach no está configurado"},503);
+  try{
+    const upstream=await fetch(YOKUP_HEALTH,{headers:{Authorization:`Bearer ${token}`,Accept:"application/json"}});
+    const result=await upstream.json().catch(()=>({}));
+    if(!upstream.ok || !result.ok) return json({ok:false,error:result.error || `Yokup respondió ${upstream.status}`},502);
+    return json(result);
+  }catch(error){ return json({ok:false,error:`Registro Yokup no disponible: ${String(error.message || error).slice(0,180)}`},502); }
+}
 
 export async function onRequestPost({request,env}){
   const origin=request.headers.get("Origin") || "";

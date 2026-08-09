@@ -95,6 +95,19 @@ test("the Coach proxy forwards once and returns Yokup's authoritative identity a
   }finally{ globalThis.fetch=realFetch; }
 });
 
+test("the Coach health check proves the secret-bound server-to-server circuit without creating a lesson",async()=>{
+  const proxy=await moduleFromSource(proxySource), realFetch=globalThis.fetch;
+  globalThis.fetch=async (url,options={})=>{
+    assert.equal(String(url),"https://api.yokup.com/academy/coach/health");
+    assert.equal(options.headers.Authorization,"Bearer test-token");
+    return new Response(JSON.stringify({ok:true,registry:"academy-coach",checkedAt:"2026-08-09T10:30:00.000Z"}),{status:200,headers:{"Content-Type":"application/json"}});
+  };
+  try{
+    const response=await proxy.onRequestGet({env:{ACADEMY_COACH_TOKEN:"test-token"}}), result=await response.json();
+    assert.equal(response.status,200); assert.equal(result.ok,true); assert.equal(result.registry,"academy-coach");
+  }finally{ globalThis.fetch=realFetch; }
+});
+
 test("every primary Academy route links to Coach and the signed deployment covers it",()=>{
   for(const page of pages) assert.match(page,/href="\/coach\/"[^>]*>Coach/);
   assert.match(deploy,/coach\/index\.html.+coach\.css.+advisor-core\.js.+coach-core\.js.+coach\.js/);
