@@ -22,6 +22,11 @@
     if (!capsula || !capsula.title) { seccion.hidden = true; return; }
     var pon = function (id, texto) { var n = document.getElementById(id); if (n) n.textContent = texto; };
     pon("capsula-hora", hhmm(capsula.hour_start) + " · activa");
+    // La temática es la del Coach en esta franja: la enseñamos porque es lo que
+    // ordena el día —tecnología, creatividad, negocio, y vuelta a empezar—.
+    var chip = document.getElementById("capsula-tema");
+    if (chip) { chip.textContent = capsula.tema_nombre || ""; chip.hidden = !capsula.tema_nombre;
+                chip.setAttribute("data-tema", capsula.tema || ""); }
     pon("capsula-fuente", capsula.source === "academia/leccion" ? "Lección de la Academia" : "Material del Consejo");
     pon("capsula-silla", capsula.role ? capsula.role + " · " + capsula.alias : "");
     pon("capsula-pieza", capsula.title);
