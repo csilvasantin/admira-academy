@@ -18,9 +18,11 @@ test("Academy and Platform expose compact navigation to Help", () => {
 });
 
 test("the public explanation states purpose without promising unlimited autonomy", () => {
-  assert.match(help, /plataforma interna de mejora continua para agentes avanzados o <em>deep agents<\/em>/i);
-  assert.match(help, /no promete autonomía sin límites/i);
-  assert.match(help, /también conocida como Bits and Atoms/i);
+  assert.match(help, /coordina la mejora continua de agentes de carbono y silicio/i);
+  assert.match(help, /Bits y Átomos es la universidad que equilibra tecnología, creatividad y negocio/i);
+  assert.match(help, /conceptos relacionados, no nombres intercambiables/i);
+  assert.match(help, /no es.+promesa de que los agentes se mejoran solos, actúan sin supervisión/i);
+  assert.match(help, /no garantiza menos coste, mejores resultados ni mejora autónoma/i);
 });
 
 test("the four continuous improvement modules are present and explicitly evolving", () => {
