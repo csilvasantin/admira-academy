@@ -8,11 +8,12 @@ test("normaliza las variantes de URL de YouTube",()=>{
   assert.equal(youtubeId("https://www.youtube.com/watch?v=TPBW7of4mkQ&t=3"),"TPBW7of4mkQ");
 });
 
-test("Smith sólo puede elegir vídeos de 30 segundos a 5 minutos",()=>{
+test("Smith sólo puede elegir vídeos de 30 segundos a 5 minutos con transcripción",()=>{
   const items=[
-    {id:"a",webpage_url:"https://youtu.be/TPBW7of4mkQ",duration:29},
-    {id:"b",webpage_url:"https://youtu.be/abcdefghijk",duration:300,title:"válido"},
-    {id:"c",webpage_url:"https://youtu.be/lmnopqrstuv",duration:301}
+    {id:"a",webpage_url:"https://youtu.be/TPBW7of4mkQ",duration:29,automatic_captions:{en:[]}},
+    {id:"b",webpage_url:"https://youtu.be/abcdefghijk",duration:300,title:"válido",automatic_captions:{"en-orig":[]}},
+    {id:"c",webpage_url:"https://youtu.be/lmnopqrstuv",duration:301,subtitles:{es:[]}},
+    {id:"d",webpage_url:"https://youtu.be/zzzzzzzzzzz",duration:180,title:"sin texto"}
   ];
   assert.deepEqual(eligibleCandidates(items).map(item=>item.videoId),["abcdefghijk"]);
 });

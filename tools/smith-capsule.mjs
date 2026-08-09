@@ -36,8 +36,11 @@ export function parseSmithEvents(output){
   try{ return JSON.parse(raw); }catch(_error){ throw new Error(`Smith devolvió JSON no válido: ${raw.slice(0,180)}`); }
 }
 export function eligibleCandidates(items){
-  return (items || []).filter(item=>youtubeId(item.webpage_url || item.url) && Number(item.duration)>=MIN_VIDEO_SECONDS && Number(item.duration)<=MAX_VIDEO_SECONDS)
-    .map(item=>({videoId:youtubeId(item.webpage_url || item.url),url:`https://www.youtube.com/watch?v=${youtubeId(item.webpage_url || item.url)}`,title:clean(item.title,180),channel:clean(item.channel || item.uploader,100),duration:Number(item.duration),views:Number(item.view_count || 0),description:clean(item.description,3000)}));
+  return (items || []).filter(item=>{
+    const languages=[...Object.keys(item.subtitles || {}),...Object.keys(item.automatic_captions || {})];
+    const hasTranscript=languages.some(language=>/^(?:es|en)(?:-|$)/i.test(language));
+    return youtubeId(item.webpage_url || item.url) && Number(item.duration)>=MIN_VIDEO_SECONDS && Number(item.duration)<=MAX_VIDEO_SECONDS && hasTranscript;
+  }).map(item=>({videoId:youtubeId(item.webpage_url || item.url),url:`https://www.youtube.com/watch?v=${youtubeId(item.webpage_url || item.url)}`,title:clean(item.title,180),channel:clean(item.channel || item.uploader,100),duration:Number(item.duration),views:Number(item.view_count || 0),description:clean(item.description,3000),hasTranscript:true}));
 }
 export function findVideo(items,sourceUrl){
   const id=youtubeId(sourceUrl);
@@ -141,7 +144,7 @@ export async function processOne(){
   if(!query) throw new Error("Smith no formuló una búsqueda");
   let candidates=eligibleCandidates(searchYoutube(query));
   if(!candidates.length) candidates=eligibleCandidates(searchYoutube(`${job.alias} ${job.tema_nombre} interview short`));
-  if(!candidates.length) throw new Error("YouTube no devolvió vídeos válidos de 30 segundos a 5 minutos");
+  if(!candidates.length) throw new Error("YouTube no devolvió vídeos de 30 segundos a 5 minutos con transcripción verificable");
   const compact=candidates.slice(0,8).map(({description,...item})=>item);
   const selection=askSmith(`Elige el vídeo que mejor forma a la silla ${job.role} · ${job.alias} en ${job.tema_nombre}. Sólo puedes elegir uno de esta lista y debes evitar homenajes, resúmenes de terceros o contenido que no sea realmente del protagonista. Candidatos: ${JSON.stringify(compact)}. Responde sólo JSON: {"videoId":"id exacto de la lista","reason":"criterio factual en una frase"}`);
   const candidate=candidates.find(item=>item.videoId===selection.videoId);
