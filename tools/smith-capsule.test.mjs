@@ -16,6 +16,7 @@ test("Smith sólo puede elegir vídeos de 30 segundos a 5 minutos con transcripc
     {id:"d",webpage_url:"https://youtu.be/zzzzzzzzzzz",duration:180,title:"sin texto"}
   ];
   assert.deepEqual(eligibleCandidates(items).map(item=>item.videoId),["abcdefghijk"]);
+  assert.equal(eligibleCandidates(items)[0].transcriptLanguage,"en-orig");
 });
 
 test("extrae únicamente el último texto JSON del CLI de Smith",()=>{

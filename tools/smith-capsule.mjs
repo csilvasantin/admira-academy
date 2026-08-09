@@ -35,12 +35,15 @@ export function parseSmithEvents(output){
   const raw=texts.at(-1).replace(/^```(?:json)?\s*|\s*```$/g,"").trim();
   try{ return JSON.parse(raw); }catch(_error){ throw new Error(`Smith devolvió JSON no válido: ${raw.slice(0,180)}`); }
 }
+function transcriptLanguage(item){
+  const manual=Object.keys(item?.subtitles || {}), automatic=Object.keys(item?.automatic_captions || {});
+  const first=(languages,preferred)=>preferred.find(language=>languages.includes(language)) || languages.find(language=>/^(?:es|en)(?:-|$)/i.test(language)) || "";
+  return first(manual,["es","en","es-orig","en-orig"]) || first(automatic,["es-orig","en-orig","es","en"]);
+}
 export function eligibleCandidates(items){
   return (items || []).filter(item=>{
-    const languages=[...Object.keys(item.subtitles || {}),...Object.keys(item.automatic_captions || {})];
-    const hasTranscript=languages.some(language=>/^(?:es|en)(?:-|$)/i.test(language));
-    return youtubeId(item.webpage_url || item.url) && Number(item.duration)>=MIN_VIDEO_SECONDS && Number(item.duration)<=MAX_VIDEO_SECONDS && hasTranscript;
-  }).map(item=>({videoId:youtubeId(item.webpage_url || item.url),url:`https://www.youtube.com/watch?v=${youtubeId(item.webpage_url || item.url)}`,title:clean(item.title,180),channel:clean(item.channel || item.uploader,100),duration:Number(item.duration),views:Number(item.view_count || 0),description:clean(item.description,3000),hasTranscript:true}));
+    return youtubeId(item.webpage_url || item.url) && Number(item.duration)>=MIN_VIDEO_SECONDS && Number(item.duration)<=MAX_VIDEO_SECONDS && transcriptLanguage(item);
+  }).map(item=>({videoId:youtubeId(item.webpage_url || item.url),url:`https://www.youtube.com/watch?v=${youtubeId(item.webpage_url || item.url)}`,title:clean(item.title,180),channel:clean(item.channel || item.uploader,100),duration:Number(item.duration),views:Number(item.view_count || 0),description:clean(item.description,3000),transcriptLanguage:transcriptLanguage(item)}));
 }
 export function findVideo(items,sourceUrl){
   const id=youtubeId(sourceUrl);
@@ -81,7 +84,7 @@ function searchYoutube(query){
 function transcriptFor(candidate){
   const dir=mkdtempSync(join(tmpdir(),"admira-smith-capsule-"));
   try{
-    run(YTDLP,["--skip-download","--write-subs","--write-auto-subs","--sub-langs","es.*,en.*","--sub-format","vtt","--no-warnings","-o",join(dir,"source.%(ext)s"),candidate.url],{timeout:180000,maxBuffer:8*1024*1024});
+    run(YTDLP,["--skip-download","--write-subs","--write-auto-subs","--sub-langs",candidate.transcriptLanguage,"--sub-format","vtt","--no-warnings","-o",join(dir,"source.%(ext)s"),candidate.url],{timeout:180000,maxBuffer:8*1024*1024});
     const file=readdirSync(dir).find(name=>name.endsWith(".vtt"));
     if(!file) return candidate.description || "";
     const seen=new Set();
