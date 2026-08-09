@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { eligibleCandidates, findCapsule, findVideo, hasTags, parseSmithEvents, youtubeId } from "./smith-capsule.mjs";
+import { readFile } from "node:fs/promises";
+
+const launchRunner=await readFile(new URL("./run-smith-capsule.sh",import.meta.url),"utf8");
 
 test("normaliza las variantes de URL de YouTube",()=>{
   assert.equal(youtubeId("https://youtu.be/TPBW7of4mkQ"),"TPBW7of4mkQ");
@@ -30,4 +33,9 @@ test("deduplica por id de YouTube y enlaza cápsula con vídeo",()=>{
   assert.equal(findVideo([video],"https://www.youtube.com/watch?v=TPBW7of4mkQ"),video);
   assert.equal(findCapsule([capsule],"video-1","stevewozniak"),capsule);
   assert.equal(hasTags(capsule,["formacion","stevewozniak"]),true);
+});
+
+test("el proceso libera el lock al apagarse",()=>{
+  assert.match(launchRunner,/trap 'rmdir "\$LOCK_DIR"/);
+  assert.doesNotMatch(launchRunner,/exec \/usr\/bin\/env node/);
 });

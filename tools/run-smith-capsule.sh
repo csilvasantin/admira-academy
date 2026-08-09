@@ -9,4 +9,4 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
 fi
 trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
 
-exec /usr/bin/env node "$RUNNER"
+/usr/bin/env node "$RUNNER"
