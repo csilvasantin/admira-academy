@@ -10,6 +10,7 @@ const coreSource=await readFile(new URL("./coach-core.js",import.meta.url),"utf8
 const advisorSource=await readFile(new URL("./advisor-core.js",import.meta.url),"utf8");
 const proxySource=await readFile(new URL("./functions/api/coach-log.js",import.meta.url),"utf8");
 const launchProxySource=await readFile(new URL("./functions/api/coach-launch.js",import.meta.url),"utf8");
+const sourceProxySource=await readFile(new URL("./functions/api/coach-source.js",import.meta.url),"utf8");
 const deploy=await readFile(new URL("./deploy.sh",import.meta.url),"utf8");
 const pages=await Promise.all(["index.html","consejeros/index.html","platform/index.html","highscore/index.html","help/index.html"].map(path=>readFile(new URL(`./${path}`,import.meta.url),"utf8")));
 const coachSandbox={module:{exports:{}}}; vm.runInNewContext(coreSource,coachSandbox); const C=coachSandbox.module.exports;
@@ -61,6 +62,13 @@ test("the Coach exposes learner, application, balance, schedule and honest verif
   assert.match(html,/Solo las verificadas por Yokup suman en Highscore/); assert.match(html,/no es una acreditación académica/);
   assert.match(css,/@media\(max-width:720px\)/); assert.match(js,/admira-academy-coach-v1/); assert.match(js,/\/api\/coach-log/); assert.match(js,/\/api\/coach-launch/);
   assert.match(js,/saveLaunch/); assert.match(js,/C\.nextCapsule/); assert.match(js,/launchNextCapsule/);
+});
+
+test("the Coach imports public sites as compact human and machine capsules",()=>{
+  assert.match(html,/id="source-import-form"/); assert.match(html,/id="site-source-url"/); assert.match(html,/Crear cápsula/);
+  assert.match(html,/Para carbono/); assert.match(html,/Para silicio/); assert.match(html,/Verificada por Yokup/);
+  assert.match(js,/\/api\/coach-source/); assert.match(js,/importSiteSource/); assert.match(js,/splitCapsule/); assert.match(js,/loadSources/);
+  assert.match(css,/\.source-import/); assert.match(css,/\.source-result\[hidden\]/);
 });
 
 test("the browser sends only identifiers and the same-origin broker keeps the Yokup secret server-side",()=>{
@@ -131,6 +139,33 @@ test("the Coach health check proves the secret-bound server-to-server circuit wi
     const response=await proxy.onRequestGet({env:{ACADEMY_COACH_TOKEN:"test-token"}}), result=await response.json();
     assert.equal(response.status,200); assert.equal(result.ok,true); assert.equal(result.registry,"academy-coach");
   }finally{ globalThis.fetch=realFetch; }
+});
+
+test("the site broker derives the training tag and chains Pixeria before Yokup",async()=>{
+  const proxy=await moduleFromSource(sourceProxySource), realFetch=globalThis.fetch, calls=[];
+  globalThis.fetch=async (url,options={})=>{
+    calls.push({url:String(url),options});
+    if(String(url).includes("api.admira.store")){
+      assert.deepEqual(JSON.parse(options.body),{url:"https://developer.nvidia.com/blog/rl/",audience:"silicio",counselorTag:"stevewozniak"});
+      return new Response(JSON.stringify({ok:true,reused:false,sourceUrl:"https://developer.nvidia.com/blog/rl/",summary:{carbono:"c",silicio:"s",aplicacion:"a"},capsule:{id:"capsule-1"},preview:{id:"preview-1"}}),{status:200,headers:{"Content-Type":"application/json"}});
+    }
+    assert.equal(String(url),"https://api.yokup.com/academy/coach/source");
+    assert.equal(options.headers.Authorization,"Bearer test-token");
+    assert.deepEqual(JSON.parse(options.body),{audience:"silicio",counselor:"cto",sourceUrl:"https://developer.nvidia.com/blog/rl/",capsuleAssetId:"capsule-1",previewAssetId:"preview-1"});
+    return new Response(JSON.stringify({ok:true,reused:false,registry:"academy-coach-source",source:{sourceId:"coach-source-1",capsuleAssetId:"capsule-1",previewAssetId:"preview-1"}}),{status:200,headers:{"Content-Type":"application/json"}});
+  };
+  try{
+    const response=await proxy.onRequestPost({env:{ACADEMY_COACH_TOKEN:"test-token"},request:new Request("https://admira.academy/api/coach-source",{method:"POST",headers:{Origin:"https://admira.academy","Content-Type":"application/json"},body:JSON.stringify({audience:"silicio",counselor:"cto",url:"https://developer.nvidia.com/blog/rl/"})})});
+    const result=await response.json(); assert.equal(response.status,200); assert.equal(result.ok,true); assert.equal(calls.length,2);
+  }finally{ globalThis.fetch=realFetch; }
+});
+
+test("the site broker rejects private or cross-origin requests before import",async()=>{
+  const proxy=await moduleFromSource(sourceProxySource);
+  const cross=await proxy.onRequestPost({env:{ACADEMY_COACH_TOKEN:"x"},request:new Request("https://admira.academy/api/coach-source",{method:"POST",headers:{Origin:"https://evil.invalid","Content-Type":"application/json"},body:"{}"})});
+  assert.equal(cross.status,403);
+  const privateUrl=await proxy.onRequestPost({env:{ACADEMY_COACH_TOKEN:"x"},request:new Request("https://admira.academy/api/coach-source",{method:"POST",headers:{Origin:"https://admira.academy","Content-Type":"application/json"},body:JSON.stringify({audience:"silicio",counselor:"cto",url:"https://127.0.0.1/admin"})})});
+  assert.equal(privateUrl.status,400);
 });
 
 test("every primary Academy route links to Coach and the signed deployment covers it",()=>{

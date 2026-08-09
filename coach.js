@@ -2,11 +2,11 @@
   "use strict";
   const A=window.AcademyAdvisorCore, C=window.AcademyCoachCore;
   if(!A || !C) throw new Error("El núcleo del Coach no está disponible");
-  const STORAGE_KEY="admira-academy-coach-v1", LOG_ENDPOINT="/api/coach-log", LAUNCH_ENDPOINT="/api/coach-launch";
+  const STORAGE_KEY="admira-academy-coach-v1", LOG_ENDPOINT="/api/coach-log", LAUNCH_ENDPOINT="/api/coach-launch", SOURCE_ENDPOINT="/api/coach-source";
   const $=(selector,root=document)=>root.querySelector(selector);
   const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
   const params=new URLSearchParams(location.search);
-  let audience=A.audience(params.get("audiencia")), agentId=A.council(params.get("id")).id, visibleSlot="";
+  let audience=A.audience(params.get("audiencia")), agentId=A.council(params.get("id")).id, visibleSlot="", sourceRequest=0;
 
   function escapeHtml(value){ return String(value ?? "").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"})[character]); }
   function load(){
@@ -40,10 +40,44 @@
   function status(message,type="info"){
     const node=$("#sync-status"); node.textContent=message; node.dataset.type=type; node.hidden=false;
   }
+  function sourceStatus(message,type="info"){
+    const node=$("#source-status"); node.textContent=message; node.dataset.type=type; node.hidden=false;
+  }
+  function splitCapsule(summary){
+    const text=String(summary || "").replace(/\r/g,"").trim();
+    const carbon=text.match(/PARA CARBONO\s*\n([\s\S]*?)(?=\n\s*PARA SILICIO|$)/i)?.[1]?.trim() || "";
+    const silicon=text.match(/PARA SILICIO\s*\n([\s\S]*?)(?=\n\s*APLICACIÓN|$)/i)?.[1]?.trim() || "";
+    const application=text.match(/APLICACIÓN\s*\n([\s\S]*)$/i)?.[1]?.trim() || "";
+    return {carbon,silicon,application};
+  }
+  function renderSource(result){
+    const registry=result?.registry?.source || result, pixeria=result?.pixeria || {}, structured=pixeria.summary || {};
+    if(!registry?.capsuleAssetId || !registry?.previewAssetId) return;
+    const parts=splitCapsule(registry.summary || pixeria.capsule?.comment), preview=$("#source-preview");
+    $("#source-title").textContent=registry.title || pixeria.capsule?.title || "Cápsula de conocimiento";
+    $("#source-carbon").textContent=structured.carbono || parts.carbon;
+    $("#source-silicon").textContent=structured.silicio || parts.silicon;
+    $("#source-application").textContent=structured.aplicacion || parts.application;
+    $("#source-original").href=registry.sourceUrl || pixeria.sourceUrl;
+    $("#source-pixeria").href=registry.pixeriaUrl || `https://www.pixeria.com/stock.html?highlight=${encodeURIComponent(registry.capsuleAssetId)}`;
+    preview.src=registry.imageUrl || pixeria.preview?.url || ""; preview.alt=`Previo de ${$("#source-title").textContent}`;
+    $("#source-result").hidden=false;
+  }
+  async function loadSources(){
+    const request=++sourceRequest, expectedAudience=audience, expectedAgent=agentId;
+    try{
+      const response=await fetch(`${SOURCE_ENDPOINT}?audience=${encodeURIComponent(expectedAudience)}&counselor=${encodeURIComponent(expectedAgent)}`,{headers:{Accept:"application/json"}});
+      const result=await response.json().catch(()=>({}));
+      if(request!==sourceRequest || expectedAudience!==audience || expectedAgent!==agentId) return;
+      if(response.ok && result.ok && result.sources?.[0]) renderSource(result.sources[0]);
+      else $("#source-result").hidden=true;
+    }catch(_error){ if(request===sourceRequest) $("#source-result").hidden=true; }
+  }
   function renderSelectors(){
     $("#student-select").innerHTML=A.COUNCIL.map(agent=>`<option value="${agent.id}" ${agent.id===agentId ? "selected" : ""}>${escapeHtml(agent.seat)} · ${escapeHtml(agent.role)} · ${escapeHtml(agent.alias)}</option>`).join("");
     $$('[data-audience]').forEach(button=>{ const active=button.dataset.audience===audience; button.classList.toggle("active",active); button.setAttribute("aria-pressed",String(active)); });
     const agent=A.council(agentId); $("#learner-label").textContent=`${agent.role} · ${agent.alias}`; $("#audience-label").textContent=audience;
+    $("#source-target").textContent=`${agent.role} · ${agent.alias} · ${audience}`;
     $("#highscore-link").href=`/highscore/?audiencia=${audience}&periodo=day`;
   }
   function renderSchedule(now){
@@ -120,6 +154,22 @@
     }catch(error){ status(`No se pudo lanzar la cápsula: ${String(error.message || error).slice(0,180)}`,"error"); }
     finally{ button.disabled=false; tick(); }
   }
+  async function importSiteSource(event){
+    event.preventDefault();
+    const input=$("#site-source-url"), button=$("#import-site-source"), url=input.value.trim(), agent=A.council(agentId);
+    if(!url){ sourceStatus("Pega la URL pública del conocimiento que quieres incorporar.","error"); input.focus(); return; }
+    button.disabled=true; $("#source-result").hidden=true; sourceStatus("Leyendo el sitio y extrayendo su contenido…","info");
+    try{
+      const response=await fetch(SOURCE_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({url,audience,counselor:agent.id})});
+      sourceStatus("Pixeria está creando el previo y las dos interpretaciones…","info");
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok || !result.ok) throw new Error(result.error || `La importación respondió ${response.status}`);
+      renderSource(result);
+      sourceStatus(`Cápsula ${result.reused ? "reutilizada" : "creada"} y verificada en Yokup para ${agent.role} · ${audience}.`,"success");
+      input.value=result.registry?.source?.sourceUrl || result.pixeria?.sourceUrl || url;
+    }catch(error){ sourceStatus(`No se registró la cápsula: ${String(error.message || error).slice(0,180)}`,"error"); }
+    finally{ button.disabled=false; }
+  }
   function tick(){
     const hourly=current(), next=C.nextCapsule(hourly.now), shown=active();
     $("#countdown").textContent=C.countdown(hourly.now).label; $("#next-dimension").textContent=next.dimensionLabel;
@@ -127,10 +177,11 @@
     $("#launch-hint").textContent=same ? "Ya encargada · abrir de nuevo no duplica" : `Smith preparará la cápsula de las ${String(next.scheduledAt.getHours()).padStart(2,"0")}:00`;
     if(visibleSlot && shown.slot!==visibleSlot) renderLesson();
   }
-  $("#student-select").addEventListener("change",event=>{ agentId=A.council(event.target.value).id; syncUrl(); renderSelectors(); renderLesson(); });
-  $$('[data-audience]').forEach(button=>button.addEventListener("click",()=>{ audience=A.audience(button.dataset.audience); syncUrl(); renderSelectors(); renderLesson(); }));
+  $("#student-select").addEventListener("change",event=>{ agentId=A.council(event.target.value).id; syncUrl(); renderSelectors(); renderLesson(); loadSources(); });
+  $$('[data-audience]').forEach(button=>button.addEventListener("click",()=>{ audience=A.audience(button.dataset.audience); syncUrl(); renderSelectors(); renderLesson(); loadSources(); }));
   $("#complete-lesson").addEventListener("click",completeLesson);
   $("#launch-next-capsule").addEventListener("click",launchNextCapsule);
+  $("#source-import-form").addEventListener("submit",importSiteSource);
   window.addEventListener("storage",renderLesson);
-  syncUrl(); renderSelectors(); renderLesson(); tick(); setInterval(tick,1000);
+  syncUrl(); renderSelectors(); renderLesson(); loadSources(); tick(); setInterval(tick,1000);
 })();
