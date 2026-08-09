@@ -65,7 +65,7 @@ test("the Coach exposes learner, application, balance, schedule and honest verif
   assert.match(css,/@media\(max-width:720px\)/); assert.match(js,/admira-academy-coach-v1/); assert.match(js,/\/api\/coach-log/); assert.match(js,/\/api\/coach-launch/);
   assert.match(js,/saveLaunch/); assert.match(js,/C\.nextCapsule/); assert.match(js,/launchNextCapsule/);
   assert.match(js,/\/api\/coach-progress/); assert.match(js,/pollAgentProgress/); assert.match(js,/setInterval\(pollAgentProgress,2000\)/);
-  assert.match(js,/nextLaunchAt:new Date\(launchedAt\+C\.HOUR\)/); assert.match(js,/button\.disabled=launching \|\| left>0/);
+  assert.match(js,/requestedAt:new Date\(requestedAt\)\.toISOString\(\)/); assert.match(js,/nextLaunchAt:new Date\(requestedAt\+C\.HOUR\)/); assert.match(js,/button\.disabled=launching \|\| left>0/);
   assert.match(css,/\.agent-progress/); assert.match(css,/\.agent-progress li\.current/);
 });
 

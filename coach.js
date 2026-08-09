@@ -183,8 +183,8 @@
       if(!Number.isInteger(Number(result.targetSlotId)) || result.dimension!==derived.dimension || result.lessonId!==derived.id) throw new Error("Yokup devolvió una cápsula incoherente con el ciclo");
       const capsuleAgent=A.council(result.capsula?.seat).id;
       if(result.counselor!==capsuleAgent) throw new Error("Yokup devolvió una silla incoherente con la cápsula");
-      const launchedAt=Date.parse(result.launchedAt) || Date.now();
-      agentId=capsuleAgent; syncUrl(); renderSelectors(); saveLaunch({...result,targetSlotId:Number(result.targetSlotId),nextLaunchAt:new Date(launchedAt+C.HOUR).toISOString()}); renderLesson();
+      const requestedAt=Date.now();
+      agentId=capsuleAgent; syncUrl(); renderSelectors(); saveLaunch({...result,targetSlotId:Number(result.targetSlotId),requestedAt:new Date(requestedAt).toISOString(),nextLaunchAt:new Date(requestedAt+C.HOUR).toISOString()}); renderLesson();
       renderAgentProgress(result.capsula); pollAgentProgress();
       status(`Cápsula ${derived.dimensionLabel} encargada a Smith para ${A.council(agentId).role} · Yokup ${result.reused ? "reutilizó el registro" : "confirmó el registro"}`,"success");
     }catch(error){ status(`No se pudo lanzar la cápsula: ${String(error.message || error).slice(0,180)}`,"error"); }
