@@ -51,7 +51,46 @@
       improvement:input.improvement !== false
     };
   }
-  function collectSilicon(agentId, academyRaw, platformRaw){
+  function collectCoach(agentId, audienceValue, coachRaw){
+    const coach=parseState(coachRaw), selectedAudience=audience(audienceValue), items=[];
+    const record=safeObject(safeObject(safeObject(coach.records)[selectedAudience])[agentId]);
+    for(const [index,entryRaw] of (Array.isArray(record.completions) ? record.completions : []).entries()){
+      const entry=safeObject(entryRaw), yokup=safeObject(entry.yokup);
+      if(yokup.status !== "verified" || !yokup.eventId || !yokup.completedAt) continue;
+      items.push(activity({
+        id:yokup.eventId,
+        kind:"leido",
+        title:`Coach · ${entry.dimensionLabel || entry.dimension || "Equilibrio"} · ${entry.title || "Lección aplicada"}`,
+        detail:`Aplicación: ${clip(entry.application || "evidencia registrada",220)} · Yokup ${yokup.missionId || "verificado"}`,
+        at:yokup.completedAt,
+        improvement:true
+      }));
+    }
+    return items.filter(Boolean);
+  }
+  function yokupCapsuleItems(raw){
+    if(Array.isArray(raw)) return raw;
+    const payload=parseState(raw);
+    return Array.isArray(payload.items) ? payload.items : [];
+  }
+  function collectYokupCapsules(agentId,audienceValue,raw){
+    const selectedAudience=audience(audienceValue), items=[];
+    for(const entryRaw of yokupCapsuleItems(raw)){
+      const entry=safeObject(entryRaw), counselorId=String(entry.counselor || "").toLowerCase();
+      if(entry.audience!==selectedAudience || !COUNCIL.some(item=>item.id===counselorId) || counselorId!==agentId || !entry.id || !entry.completedAt) continue;
+      items.push(activity({
+        id:entry.id,
+        kind:"leido",
+        title:`Cápsula · ${entry.title || entry.dimension || "Conocimiento verificado"}`,
+        detail:`${entry.dimension || "Formación"} · Yokup verificó la publicación en Pixeria`,
+        at:entry.completedAt,
+        url:entry.url,
+        improvement:true
+      }));
+    }
+    return items.filter(Boolean);
+  }
+  function collectSilicon(agentId, academyRaw, platformRaw, coachRaw, yokupCapsulesRaw){
     const academy = parseState(academyRaw), platform = parseState(platformRaw), items = [];
     const lessons = safeObject(safeObject(safeObject(academy.records)[agentId]).lessons);
     for(const [lessonId, entryRaw] of Object.entries(lessons)){
@@ -75,9 +114,11 @@
       if(student.id !== agentId || closure.audience === "carbono") continue;
       items.push(activity({id:closure.id,kind:"mejora",title:work.title || "Cierre de mejora",detail:`${work.type || "trabajo"} · ${work.status || "estado no declarado"} · ${clip(closure.evidence || "sin detalle")}`,at:closure.closedAt || safeObject(closure.time).endedAt,improvement:true}));
     }
+    items.push(...collectCoach(agentId,"silicio",coachRaw));
+    items.push(...collectYokupCapsules(agentId,"silicio",yokupCapsulesRaw));
     return items.filter(Boolean).sort((a,b) => b.at.localeCompare(a.at));
   }
-  function collectCarbon(agentId, carbonRaw, platformRaw){
+  function collectCarbon(agentId, carbonRaw, platformRaw, coachRaw, yokupCapsulesRaw){
     const carbon = parseState(carbonRaw), platform = parseState(platformRaw), items = [];
     const record = safeObject(safeObject(carbon.records)[agentId]);
     for(const [index,itemRaw] of (Array.isArray(record.activities) ? record.activities : []).entries()){
@@ -89,20 +130,23 @@
       if(student.id !== agentId || closure.audience !== "carbono") continue;
       items.push(activity({id:closure.id,kind:"mejora",title:work.title || "Cierre de mejora",detail:`${work.type || "trabajo"} · ${work.status || "estado no declarado"} · ${clip(closure.evidence || "sin detalle")}`,at:closure.closedAt || safeObject(closure.time).endedAt,improvement:true}));
     }
+    items.push(...collectCoach(agentId,"carbono",coachRaw));
+    items.push(...collectYokupCapsules(agentId,"carbono",yokupCapsulesRaw));
     return items.filter(Boolean).sort((a,b) => b.at.localeCompare(a.at));
   }
   function collect(agentId, audienceValue, states={}){
     const id = council(agentId).id;
     return audience(audienceValue) === "carbono"
-      ? collectCarbon(id, states.carbon, states.platform)
-      : collectSilicon(id, states.academy, states.platform);
+      ? collectCarbon(id, states.carbon, states.platform, states.coach, states.yokupCapsules)
+      : collectSilicon(id, states.academy, states.platform, states.coach, states.yokupCapsules);
   }
   function period(id){ return PERIODS.find(item => item.id === id) || PERIODS[0]; }
   function within(items, periodId, now=Date.now()){
     const selected = period(periodId);
-    if(selected.ms === null) return items.slice();
+    const maximum = Number(now);
+    if(selected.ms === null) return items.filter(item => new Date(item.at).getTime() <= maximum);
     const minimum = Number(now) - selected.ms;
-    return items.filter(item => new Date(item.at).getTime() >= minimum);
+    return items.filter(item => { const timestamp=new Date(item.at).getTime(); return timestamp >= minimum && timestamp <= maximum; });
   }
   function summarize(items, periodId, now=Date.now()){
     const filtered = within(items,periodId,now);
@@ -117,6 +161,21 @@
     const academy = parseState(states.academy), lessons = safeObject(safeObject(safeObject(academy.records)[id]).lessons);
     const completed = Object.values(lessons).filter(item => safeObject(item).complete === true).length;
     return {value:Math.round(Math.min(4,completed)/4*100),label:completed ? `${completed} de 4 lecciones` : "Sin evaluar",detail:completed === 4 ? "Recorrido local completo; revisión externa pendiente." : "Progreso local con evidencia; no equivale a acreditación."};
+  }
+  function leaderboard(audienceValue, states={}, periodId="day", now=Date.now()){
+    const selectedAudience=audience(audienceValue), selectedPeriod=period(periodId).id;
+    const rows=COUNCIL.map(agent => {
+      const activities=collect(agent.id,selectedAudience,states).filter(item=>!String(item.id || "").startsWith("transition-"));
+      const summary=summarize(activities,selectedPeriod,now);
+      const lifetime=summarize(activities,"total",now);
+      return {...agent,score:summary.total,studies:summary.total,improvements:summary.improvements,read:summary.read,viewed:summary.viewed,lifetime:lifetime.total};
+    }).sort((a,b)=>b.score-a.score || a.seat.localeCompare(b.seat));
+    let previousScore=null, previousRank=0;
+    return rows.map((row,index)=>{
+      const rank=row.score === 0 ? null : row.score === previousScore ? previousRank : index+1;
+      previousScore=row.score; if(rank !== null) previousRank=rank;
+      return {...row,rank};
+    });
   }
 
   function youtubeId(value){
@@ -140,5 +199,5 @@
     return candidates.sort((a,b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0] || null;
   }
 
-  return {COUNCIL,LESSONS,PERIODS,council,audience,parseState,collect,period,within,summarize,progress,youtubeId,pixeriaItems,findPixeriaVideo};
+  return {COUNCIL,LESSONS,PERIODS,council,audience,parseState,collect,collectYokupCapsules,period,within,summarize,progress,leaderboard,youtubeId,pixeriaItems,findPixeriaVideo};
 });

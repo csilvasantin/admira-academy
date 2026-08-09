@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Highscore · Ranking del Consejo — Admira Academy</title>
+  <meta name="description" content="Ranking temporal y verificable de los ocho consejeros de AdmiraNeXT según sus hitos de estudio en Admira Academy.">
+  <meta name="theme-color" content="#080a10">
+  <link rel="canonical" href="https://admira.academy/highscore/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/highscore.css">
+  <script src="/advisor-core.js" defer></script>
+  <script src="/highscore.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#ranking">Saltar al ranking</a>
+  <header class="site-header"><div class="wrap header-inner"><a class="brand" href="/">admira<span>.</span>academy</a><nav aria-label="Navegación"><a href="/">Academia</a><a href="/platform/">Platform</a><a href="/consejeros/">Consejeros</a><a href="/coach/">Coach</a><a class="active" href="/highscore/" aria-current="page">Highscore</a><a href="/help/">Ayuda</a></nav></div></header>
+
+  <main id="ranking">
+    <section class="hero"><div class="wrap hero-grid"><div><p class="eyebrow">CONSEJO · RENDIMIENTO VERIFICABLE</p><div class="headline-row"><h1>Quién está<br><span>aprendiendo más.</span></h1><details class="header-detail"><summary>Ver detalle</summary><div class="header-detail-body"><p class="lede">El ranking de los ocho consejeros de AdmiraNeXT ordenado por sus estudios trazados. Últimas 24 horas, 7 días, 30 días o el historial conservado; carbono y silicio siempre separados.</p></div></details></div></div><aside class="score-contract"><span>Cómo puntúa</span><strong>1 aprendizaje trazado<br>= 1 estudio</strong><p>Cuenta cápsulas verificadas por Yokup, lecturas, vídeos y cierres de aprendizaje. Buscar, validar, importar, reintentar o fallar no suma. Cero significa que no existe actividad verificada para ese periodo.</p></aside></div></section>
+
+    <section class="board"><div class="wrap">
+      <div class="controls"><div class="audience-switch" role="group" aria-label="Tipo de agente"><button type="button" data-audience="silicio" aria-pressed="true">◆ Silicio</button><button type="button" data-audience="carbono" aria-pressed="false">○ Carbono</button></div><span id="data-scope">Consultando trazabilidad de Yokup…</span></div>
+
+      <div class="period-tabs" id="period-tabs" role="group" aria-label="Periodo del ranking"></div>
+
+      <section class="overview" aria-label="Resumen del periodo">
+        <article><span>Estudios</span><strong id="total-studies">0</strong><small id="selected-period-label">último día</small></article>
+        <article><span>Participan</span><strong id="active-students">0/8</strong><small>con actividad trazada</small></article>
+        <article class="leader-card"><span>Líder actual</span><strong id="leader-name">Sin actividad</strong><small id="leader-score">0 estudios</small></article>
+      </section>
+
+      <section class="podium-section" aria-labelledby="podium-title"><div class="section-head"><div><p>Podio del periodo</p><h2 id="podium-title">Top consejeros</h2></div><span id="updated-at"></span></div><div class="podium" id="podium"></div></section>
+
+      <section class="ranking-section" aria-labelledby="table-title"><div class="section-head"><div><p>Clasificación completa</p><h2 id="table-title">Las ocho sillas</h2></div><span>Orden: estudios · desempate por silla</span></div><div class="table-shell"><table><thead><tr><th scope="col">Pos.</th><th scope="col">Consejero</th><th scope="col">Estudios</th><th scope="col">Leído</th><th scope="col">Visto</th><th scope="col">Historial conservado</th><th scope="col"><span class="sr-only">Detalle</span></th></tr></thead><tbody id="ranking-body"></tbody></table></div></section>
+
+      <p class="truth-note">La clasificación usa las cápsulas verificadas globalmente por Yokup y añade la actividad local que conserve este navegador. Una cápsula pendiente o no publicada en Pixeria no suma. No es una acreditación y carbono nunca hereda los datos de silicio.</p>
+    </div></section>
+  </main>
+
+  <footer><div class="wrap"><a class="brand" href="/">admira<span>.</span>academy</a><p>Highscore del Consejo · rendimiento temporal verificable</p><span class="sig">academia highscore v1</span></div></footer>
+</body>
+</html>

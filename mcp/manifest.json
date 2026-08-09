@@ -1,0 +1,125 @@
+{
+  "name": "admira-academy",
+  "title": "Admira Academy · admira.academy — la formación de la suite AdmiraNeXT",
+  "description": "Hub MCP de admira.academy. Aquí se forma al Consejo: ocho sillas con su material, un Coach que rota tecnología → creatividad → negocio una lección por hora, y una cápsula activa cada hora que además abre su ventana puntuable en Yokup. Los datos NO viven en este sitio: los sirve el worker de Yokup, y esto dice cómo pedirlos.",
+  "version": "v.09.08.2026.r1",
+  "site": "https://admira.academy",
+  "hub": "https://admira.academy/mcp/",
+  "llms_txt": "https://admira.academy/mcp/llms.txt",
+  "help_humans": "https://admira.academy/help/",
+  "repo": "https://github.com/csilvasantin/admira-academy",
+  "contact": {
+    "telegram_group": "AgoraMatrix",
+    "signature": "MorfeoMBA16 · responsable del proyecto"
+  },
+  "http_api": {
+    "base_url": "https://api.yokup.com",
+    "notes": "La Academia es un sitio estático en Cloudflare Pages; todo su dato vivo sale del worker yokup-rtc. Usa api.yokup.com: el host workers.dev está bloqueado por ISPs españoles.",
+    "read": [
+      {
+        "method": "GET",
+        "path": "/academy/capsula",
+        "auth": "no",
+        "desc": "La cápsula de conocimiento de esta hora: temática, silla del Consejo, pieza elegida y la ventana que abrió. Pedirla TAMBIÉN abre la hora si nadie había pasado por el worker."
+      },
+      {
+        "method": "GET",
+        "path": "/academy/coach/completions",
+        "auth": "no",
+        "desc": "Lecciones completadas por consejero y franja (sin el texto de aplicación)."
+      },
+      {
+        "method": "GET",
+        "path": "/council/knowledge",
+        "auth": "no",
+        "desc": "Cuánto sabe cada silla: piezas totales, cuáles le dieron y cuáles se formó (#formacion)."
+      },
+      {
+        "method": "GET",
+        "path": "/council/formacion",
+        "auth": "no",
+        "desc": "El acontecimiento, no el estado: qué silla creció, cuánto y cuándo."
+      },
+      {
+        "method": "GET",
+        "path": "/highscore/daily",
+        "auth": "no",
+        "desc": "El marcador de la flota, donde puntúan las ventanas de formación."
+      }
+    ],
+    "interact": [
+      {
+        "method": "POST",
+        "path": "/academy/coach/completion",
+        "auth": "token propio ACADEMY_COACH_TOKEN",
+        "desc": "Registra una lección completada. Servidor a servidor desde Pages; la aplicación debe tener entre 20 y 900 caracteres y la franja, como mucho 24 h de antigüedad."
+      },
+      {
+        "method": "GET",
+        "path": "/academy/coach/health",
+        "auth": "token propio",
+        "desc": "Salud del Coach."
+      }
+    ],
+    "auth": {
+      "how": "Lo de lectura es abierto. Lo del Coach usa su propio token de servidor, no la sesión de Google del perímetro de Yokup.",
+      "protected": []
+    }
+  },
+  "modelo": {
+    "sillas": [
+      "ceo",
+      "cto",
+      "coo",
+      "cfo",
+      "cco",
+      "cdo",
+      "cxo",
+      "cso"
+    ],
+    "tematicas": {
+      "tecnologia": [
+        "cto",
+        "coo"
+      ],
+      "creatividad": [
+        "cco",
+        "cdo",
+        "cxo",
+        "cso"
+      ],
+      "negocio": [
+        "ceo",
+        "cfo"
+      ]
+    },
+    "rotacion": "Una temática por hora: tecnología → creatividad → negocio, y vuelta. 24 al día, 8 de cada. La rueda la lleva coachLessonForSlot en el worker; no la dupliques.",
+    "capsula": "Se elige del Stock de pixeria entre el material etiquetado con el alias de esa silla, con #formacion primero. Si esa silla no tiene material, la cápsula es la lección del Coach de esa hora.",
+    "ventana": "Cada cápsula abre una ventana en Yokup (8 puntos) que rota entre los agentes declarados de la Academia, uno cada cuatro horas."
+  },
+  "trampas": [
+    "El material de una silla se etiqueta en pixeria con el ALIAS del consejero (stevejobs, stevewozniak…) y, si es formación, además con #formacion. Sin la etiqueta no existe para el Consejo.",
+    "La traza de puntos del Highscore solo cubre el DÍA EN CURSO: para un informe de ayer no hay recorte.",
+    "La plataforma no dispara el cron del worker: el reloj va enganchado al tráfico. Pedir /academy/capsula cuenta como tráfico y abre la hora.",
+    "El progreso de las lecciones que ve un visitante está en su navegador (localStorage): no es un dato de la casa, es de esa pantalla."
+  ],
+  "mcp_server": null,
+  "federation": [
+    {
+      "name": "yokup.com",
+      "hub": "https://www.yokup.com/mcp/"
+    },
+    {
+      "name": "admiranext.com",
+      "hub": "https://www.admiranext.com/mcp/"
+    },
+    {
+      "name": "pixeria.com",
+      "hub": "https://www.pixeria.com/mcp/"
+    },
+    {
+      "name": "admira.live",
+      "hub": "https://www.admira.live/mcp/"
+    }
+  ]
+}

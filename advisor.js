@@ -19,7 +19,8 @@
   const states = {
     academy:JSON.stringify(academy),
     platform:localStorage.getItem("admira-academy-platform-v1"),
-    carbon:localStorage.getItem("admira-academy-carbon-v1")
+    carbon:localStorage.getItem("admira-academy-carbon-v1"),
+    coach:localStorage.getItem("admira-academy-coach-v1")
   };
 
   function loadAcademy(){
@@ -101,7 +102,7 @@
     const video=$("#verified-video"); video.src=item.url; if(item.thumbnail) video.poster=item.thumbnail;
     $("#verified-title").textContent=item.title || trainingFor()?.video?.title || "Vídeo verificado";
     $("#verified-detail").textContent=`${agent.alias} · activo público Pixeria · #formacion #${T.role(agent.id).tag}`;
-    $("#verified-source").href=item.url;
+    $("#verified-source").href=item.id ? `https://www.pixeria.com/stock?highlight=${encodeURIComponent(item.id)}` : item.url;
     $("#verified-preview").hidden=false;
   }
   function renderFormation(){

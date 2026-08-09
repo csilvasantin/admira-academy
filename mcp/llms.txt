@@ -1,0 +1,50 @@
+# Admira Academy · admira.academy
+
+> Aquí se forma al Consejo de AdmiraNeXT: ocho sillas, un Coach que rota tres
+> temáticas y una cápsula activa cada hora. **El dato vivo no está en este sitio**:
+> lo sirve el worker de Yokup. Esta página dice cómo pedirlo.
+
+API: `https://api.yokup.com` — nunca el host `workers.dev`, que está bloqueado por
+ISPs españoles.
+
+## El modelo en cuatro frases
+
+1. **Ocho sillas**, cada una con un consejero de referencia: `ceo` (Steve Jobs),
+   `cto` (Wozniak), `coo` (Tim Cook), `cfo` (Buffett), `cco` (Walt Disney),
+   `cdo` (Dieter Rams), `cxo` (Howard Schultz), `cso` (George Lucas).
+2. **Tres temáticas**, una por hora y vuelta a empezar: **tecnología** (cto, coo) →
+   **creatividad** (cco, cdo, cxo, cso) → **negocio** (ceo, cfo). 24 al día, 8 de cada.
+   La rueda la lleva `coachLessonForSlot` en el worker: **no la dupliques**, pídela.
+3. **Una cápsula por hora**: se elige del Stock de pixeria entre el material
+   etiquetado con el alias de esa silla, dando prioridad a lo que lleva
+   `#formacion` —eso es lo que le trajeron para formarse—. Si esa silla no tiene
+   material, la cápsula es la lección que el Coach da esa hora.
+4. **Cada cápsula abre su ventana** en Yokup (8 puntos), rotando entre los agentes
+   declarados de la Academia, uno cada cuatro horas.
+
+## Qué pedir
+
+| Ruta | Puerta | Para qué |
+|---|---|---|
+| `GET /academy/capsula` | abierta | La cápsula de esta hora: temática, silla, pieza y su ventana. **Pedirla abre la hora** si nadie había pasado por el worker. |
+| `GET /academy/coach/completions` | abierta | Lecciones completadas por consejero y franja. |
+| `GET /council/knowledge` | abierta | Cuánto sabe cada silla: total, lo que le dieron y lo que se formó. |
+| `GET /council/formacion` | abierta | El acontecimiento: qué silla creció, cuánto y cuándo. |
+| `POST /academy/coach/completion` | token propio | Registrar una lección. Servidor a servidor; la aplicación, entre 20 y 900 caracteres, y la franja como mucho de hace 24 h. |
+
+## Trampas
+
+- **El material se etiqueta en pixeria con el alias del consejero** (`stevejobs`,
+  `stevewozniak`…) y, si es formación, además con `#formacion`. Sin etiqueta, para el
+  Consejo no existe.
+- **La traza de puntos solo cubre el día en curso.** Para algo de ayer no hay recorte.
+- **El cron del worker no lo dispara la plataforma**: su reloj va enganchado al
+  tráfico. Pedir `/academy/capsula` cuenta como tráfico y abre la hora.
+- **El progreso de lecciones que ve un visitante vive en su navegador**
+  (`localStorage`): es de esa pantalla, no de la casa.
+
+## Las otras puertas
+
+Para personas: [admira.academy/help](https://admira.academy/help/).
+Los contratos de Yokup, donde se declara y se puntúa todo:
+[yokup.com/mcp](https://www.yokup.com/mcp).

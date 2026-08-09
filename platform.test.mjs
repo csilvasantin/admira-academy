@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import vm from "node:vm";
 
-const html = await readFile(new URL("./plataforma/index.html",import.meta.url),"utf8");
+const html = await readFile(new URL("./platform/index.html",import.meta.url),"utf8");
 const css = await readFile(new URL("./platform.css",import.meta.url),"utf8");
 const js = await readFile(new URL("./platform.js",import.meta.url),"utf8");
 const coreSource = await readFile(new URL("./platform-core.js",import.meta.url),"utf8");
 const deploy = await readFile(new URL("./deploy.sh",import.meta.url),"utf8");
+const redirects = await readFile(new URL("./_redirects",import.meta.url),"utf8");
 const sandbox={module:{exports:{}},URL,Date,Math};
 vm.runInNewContext(coreSource,sandbox);
 const core=sandbox.module.exports;
@@ -73,10 +74,12 @@ test("the platform persists real local state and renders history",()=>{
 
 test("navigation integrates the platform with Academy and training",async()=>{
   assert.match(html,/href="\/">Academia/); assert.match(html,/href="\/#formacion">Formación/);
-  const academy=await readFile(new URL("./index.html",import.meta.url),"utf8"); assert.match(academy,/href="\/plataforma\/">Plataforma/);
+  const academy=await readFile(new URL("./index.html",import.meta.url),"utf8"); assert.match(academy,/href="\/platform\/">Platform/);
+  assert.match(html,/rel="canonical" href="https:\/\/admira\.academy\/platform\/"/);
+  assert.match(redirects,/\/plataforma \/platform\/ 301/);
 });
 
 test("mobile layout and signed dual-project deployment cover the platform",()=>{
   assert.match(css,/@media\(max-width:700px\)/); assert.match(css,/\.student-grid\{grid-template-columns:1fr 1fr\}/);
-  assert.match(deploy,/plataforma\/index\.html/); assert.match(deploy,/no se encontraron los anclajes de la plataforma/); assert.match(deploy,/--project-name bits-and-atoms/);
+  assert.match(deploy,/platform\/index\.html/); assert.match(deploy,/no se encontraron los anclajes de la plataforma/); assert.match(deploy,/--project-name bits-and-atoms/);
 });

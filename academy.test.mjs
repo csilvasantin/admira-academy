@@ -8,13 +8,33 @@ const css = await readFile(new URL("./academy.css", import.meta.url), "utf8");
 const js = await readFile(new URL("./academy.js", import.meta.url), "utf8");
 const coreSource = await readFile(new URL("./academy-training-core.js", import.meta.url), "utf8");
 const deploy = await readFile(new URL("./deploy.sh", import.meta.url), "utf8");
+const publicRoutes = await Promise.all([
+  "./index.html",
+  "./coach/index.html",
+  "./highscore/index.html",
+  "./help/index.html",
+  "./consejeros/index.html",
+].map(path => readFile(new URL(path, import.meta.url), "utf8")));
+const platform = await readFile(new URL("./platform/index.html", import.meta.url), "utf8");
 const sandbox = { module:{exports:{}}, URL, Date };
 vm.runInNewContext(coreSource, sandbox);
 const core = sandbox.module.exports;
 
-test("the primary navigation enters the academy", () => {
-  assert.match(html, /class="nav-cta" href="#academia">Entrar en la academia/);
+test("the primary navigation enters the productive Platform", () => {
+  assert.match(html, /class="nav-cta" href="\/platform\/">Entrar en la academia/);
+  assert.match(html, /class="button primary" href="\/platform\/">Entrar en la academia/);
   assert.doesNotMatch(html, /class="nav-cta"[^>]*>Pregunta al avatar/);
+});
+
+test("public routes keep the Academy taxonomy canonical and their repeated introductions compact", () => {
+  assert.match(html, /Academia de <span>Carbono y Silicio<\/span>/);
+  assert.match(html, /Personas y máquinas aprenden y trabajan de forma coordinada para mejorar la vida de los demás/i);
+  for (const page of publicRoutes) {
+    assert.doesNotMatch(page, /Bits y Silicio/i);
+    assert.match(page, /<details class="header-detail">\s*<summary>Ver detalle<\/summary>/);
+    assert.doesNotMatch(page, /<details class="header-detail"[^>]*\bopen\b/);
+  }
+  assert.doesNotMatch(platform, /class="header-detail"/);
 });
 
 test("the catalog contains exactly the eight Council students and a training action", () => {
@@ -159,6 +179,8 @@ test("responsive safeguards include the training workspace", () => {
 test("the signed release inlines core, application and CSS assets", () => {
   assert.match(deploy, /academy-training-core\.js/);
   assert.match(deploy, /html\.replace\(core_tag/);
+  assert.match(deploy, /academy-capsula\.js/);
+  assert.match(deploy, /html\.replace\(capsule_tag/);
   assert.match(deploy, /html\.replace\(css_tag/);
   assert.match(deploy, /DOMContentLoaded/);
   assert.match(deploy, /--project-name bits-and-atoms/);

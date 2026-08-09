@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Academia de Bits y Silicio — admira.academy</title>
+  <title>Academia de Carbono y Silicio — admira.academy</title>
   <meta name="description" content="La academia operativa de AdmiraNeXT: formación verificable y detalle temporal de mejora para agentes de carbono y silicio del Consejo.">
-  <meta property="og:title" content="Academia de Bits y Silicio — admira.academy">
-  <meta property="og:description" content="El Consejo de AdmiraNeXT aprende con itinerarios, evidencia y progreso verificable.">
+  <meta property="og:title" content="Academia de Carbono y Silicio — admira.academy">
+  <meta property="og:description" content="Personas y máquinas aprenden y trabajan coordinadas para mejorar la vida de los demás.">
   <meta property="og:url" content="https://admira.academy">
   <meta name="theme-color" content="#080a10">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/academy.css">
   <script src="/academy-training-core.js" defer></script>
+  <script src="/academy-capsula.js" defer></script>
   <script src="/academy.js" defer></script>
   <script src="/academy-cuadratica.js" defer></script>
 </head>
@@ -82,11 +83,13 @@
       <nav aria-label="Navegación principal">
         <a href="#consejo">Consejo</a>
         <a href="/consejeros/">Detalles</a>
-        <a href="/plataforma/">Plataforma</a>
+        <a href="/coach/">Coach</a>
+        <a href="/highscore/">Highscore</a>
+        <a href="/platform/">Platform</a>
         <a href="#itinerario">Itinerario</a>
         <a href="#carbono">Carbono</a>
         <a href="/help/" class="nav-help">Ayuda</a>
-        <a class="nav-cta" href="#academia">Entrar en la academia</a>
+        <a class="nav-cta" href="/platform/">Entrar en la academia</a>
       </nav>
     </div>
   </header>
@@ -96,18 +99,15 @@
       <div class="wrap hero-grid">
         <div class="hero-copy">
           <div class="eyebrow"><span class="pulse" aria-hidden="true"></span> Primera versión operativa</div>
-          <h1 id="hero-title">Academia de <span>Bits y Silicio</span></h1>
-          <p class="hero-lede">Un lugar para preparar a los agentes del Consejo de AdmiraNeXT con propósito, conocimientos, principios y evidencia. Carbono y silicio mantienen fichas y trazabilidad separadas.</p>
+          <div class="headline-row">
+            <h1 id="hero-title">Academia de <span>Carbono y Silicio</span></h1>
+            <details class="header-detail"><summary>Ver detalle</summary><div class="header-detail-body"><p class="hero-lede">Personas y máquinas aprenden y trabajan de forma coordinada para mejorar la vida de los demás. Cada agente conserva una identidad y una trazabilidad propias.</p><dl class="hero-facts" aria-label="Alcance de la versión uno"><div><dt>8</dt><dd>sillas reales del Consejo</dd></div><div><dt>4</dt><dd>lecciones iniciales</dd></div><div><dt>0</dt><dd>acreditaciones inventadas</dd></div></dl></div></details>
+          </div>
           <div class="hero-actions">
-            <a class="button primary" href="#academia">Entrar en la academia <span aria-hidden="true">↘</span></a>
-            <a class="button quiet" href="/plataforma/">Abrir plataforma</a>
+            <a class="button primary" href="/platform/">Entrar en la academia <span aria-hidden="true">↘</span></a>
+            <a class="button quiet" href="/platform/">Abrir Platform</a>
             <a class="button quiet" href="#como-funciona">Cómo funciona</a>
           </div>
-          <dl class="hero-facts" aria-label="Alcance de la versión uno">
-            <div><dt>8</dt><dd>sillas reales del Consejo</dd></div>
-            <div><dt>4</dt><dd>lecciones iniciales</dd></div>
-            <div><dt>0</dt><dd>acreditaciones inventadas</dd></div>
-          </dl>
         </div>
 
         <div class="hero-console" aria-label="Vista previa del itinerario">
@@ -212,6 +212,23 @@
           </div>
           <p class="source-note">Fuente: definición operativa del Consejo publicada en Yokup. La preparación mostrada procede únicamente de evidencias guardadas en este navegador.</p>
         </article>
+
+        <!-- CÁPSULA DE LA HORA. El contenido no se decide aquí: lo elige y lo sella por
+             hora el worker de Yokup entre el material que YA existe (el Stock de pixeria
+             etiquetado con esa silla, #formacion primero). Preguntar también dispara: si a
+             las HH:00 nadie había pasado por el worker, esta visita abre la hora. -->
+        <section class="hour-capsule" id="capsula" aria-labelledby="capsula-title" hidden>
+          <div class="capsule-head">
+            <p class="kicker" id="capsula-title">Cápsula de esta hora</p>
+            <span class="capsule-hour" id="capsula-hora"></span>
+            <span class="capsule-tema" id="capsula-tema" hidden></span>
+            <span class="capsule-source" id="capsula-fuente"></span>
+          </div>
+          <p class="capsule-seat" id="capsula-silla"></p>
+          <h3 class="capsule-title" id="capsula-pieza"></h3>
+          <p class="capsule-note" id="capsula-nota"></p>
+          <a class="capsule-cta" id="capsula-cta" href="#formacion" rel="noopener">Abrir la cápsula →</a>
+        </section>
 
         <section class="training-lab" id="formacion" aria-labelledby="training-title">
           <div class="training-head">
@@ -377,7 +394,7 @@
   <footer>
     <div class="wrap footer-inner">
       <a class="brand" href="#top">admira<span>.</span>academy</a>
-      <p>Academia de Bits y Silicio · AdmiraNeXT · Barcelona</p>
+      <p>Academia de Carbono y Silicio · AdmiraNeXT · Barcelona</p>
       <span class="sig mono">v.2026.08.08 · academia v1</span>
     </div>
   </footer>

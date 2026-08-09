@@ -91,6 +91,7 @@ test("Pixeria receives canonical formation tags and is checked through its publi
   assert.match(js,/findPixeriaVideo\(await response\.json\(\),training\.video\.url\)/);
   assert.match(js,/hasRequiredPixeriaTags\(agent\.id,item\)/);
   assert.match(js,/publicVideo && tagged/);
+  assert.match(js,/https:\/\/www\.pixeria\.com\/stock\?highlight=/);
 });
 
 test("the import checks Pixeria first and never duplicates an existing YouTube source",()=>{

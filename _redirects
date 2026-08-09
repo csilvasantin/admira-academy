@@ -1,0 +1,7 @@
+/mcp /mcp/index.html 200
+/mcp/ /mcp/index.html 200
+/help /help/index.html 200
+/highlights /highscore/ 301
+/highlights/* /highscore/:splat 301
+/plataforma /platform/ 301
+/plataforma/* /platform/:splat 301
