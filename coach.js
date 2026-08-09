@@ -60,7 +60,7 @@
     const button=$("#complete-lesson"), application=$("#application");
     if(existing?.yokup?.status==="verified"){
       button.disabled=true; button.textContent="Lección registrada ✓"; application.value=existing.application || ""; application.disabled=true;
-      status(`Registro confirmado en Yokup · ${existing.yokup.missionId}`,"success");
+      status(`Registro confirmado en Yokup · ${existing.yokup.registry || existing.yokup.missionId}`,"success");
     }else{
       button.disabled=false; button.textContent=existing ? "Reintentar registro en Yokup" : "Completar y registrar en Yokup"; application.disabled=false; application.value=existing?.application || application.value;
       if(existing) status(`Pendiente de sincronizar: ${existing.yokup?.error || "vuelve a intentarlo"}`,"error"); else $("#sync-status").hidden=true;
@@ -78,7 +78,7 @@
       const response=await fetch(LOG_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({audience:base.audience,counselor:base.counselor,slotId:base.slotId,application:base.application})});
       const result=await response.json().catch(()=>({}));
       if(!response.ok || !result.ok) throw new Error(result.error || `Yokup respondió ${response.status}`);
-      upsertCompletion({...base,id:result.eventId,at:result.completedAt,lessonId:result.lessonId,dimension:result.dimension,dimensionLabel:C.DIMENSIONS.find(item=>item.id===result.dimension)?.label || base.dimensionLabel,yokup:{status:"verified",missionId:result.missionId,eventId:result.eventId,completedAt:result.completedAt,syncedAt:new Date().toISOString(),reused:Boolean(result.reused)}});
+      upsertCompletion({...base,id:result.eventId,at:result.completedAt,lessonId:result.lessonId,dimension:result.dimension,dimensionLabel:C.DIMENSIONS.find(item=>item.id===result.dimension)?.label || base.dimensionLabel,yokup:{status:"verified",registry:result.registry,eventId:result.eventId,completedAt:result.completedAt,syncedAt:new Date().toISOString(),reused:Boolean(result.reused)}});
       renderLesson();
     }catch(error){
       upsertCompletion({...base,yokup:{status:"pending",error:String(error.message || error).slice(0,180)}});
