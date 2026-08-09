@@ -58,6 +58,17 @@
     const slot=C.slotAt(new Date()), launch=selectedLaunch(), target=Number(launch?.targetSlotId);
     return Number.isInteger(target) && target>=slot-1 && target<=slot+1 ? target*C.HOUR : slot*C.HOUR;
   }
+  function renderLatestCapsule(capsule){
+    if(!capsule?.smith || capsule.smith.status!=="verified") return;
+    const dimension=C.DIMENSIONS.find(item=>item.id===capsule.tema), finishedAt=Number(capsule.smith.updated_at || capsule.at || 0), link=$("#latest-capsule-link"), time=$("#latest-capsule-time");
+    $("#latest-capsule-title").textContent=capsule.title || "Cápsula de conocimiento";
+    $("#latest-capsule-type").textContent=dimension?.label || capsule.tema_nombre || "Formación";
+    $(".latest-capsule").style.setProperty("--latest-tone",dimension?.tone || "#ffd76a");
+    link.href=capsule.smith.capsule_id ? `https://www.pixeria.com/stock.html?highlight=${encodeURIComponent(capsule.smith.capsule_id)}` : "https://www.pixeria.com/stock.html";
+    if(finishedAt){
+      const date=new Date(finishedAt); time.dateTime=date.toISOString(); time.textContent=`finalizada ${new Intl.DateTimeFormat("es-ES",{hour:"2-digit",minute:"2-digit"}).format(date)}`;
+    }
+  }
   function renderAgentProgress(capsule){
     const smith=capsule?.smith || {}, statusValue=smith.status || "pending", stage=smith.stage || "queued", progress=statusValue==="verified" ? 100 : Math.max(0,Math.min(99,Number(smith.progress)||0));
     const node=$("#agent-progress"), title={queued:"Esperando a Smith",opening_terminal:"Abriendo terminal",asking_grok:"Grok prepara la búsqueda",searching_youtube:"Buscando en YouTube",selecting_source:"Eligiendo la mejor fuente",transcribing:"Transcribiendo el vídeo",synthesizing:"Interpretando el conocimiento",importing_pixeria:"Importando en Pixeria",publishing_capsule:"Publicando la cápsula",verifying_yokup:"Verificando en Yokup",verified:"Cápsula terminada",error:"Smith necesita reintentar"}[stage] || "Smith está trabajando";
@@ -74,7 +85,7 @@
       const response=await fetch(`${PROGRESS_ENDPOINT}?hourStart=${hourStart}`,{headers:{Accept:"application/json"},cache:"no-store"});
       const result=await response.json().catch(()=>({}));
       if(request!==progressRequest) return;
-      if(response.ok && result.ok && result.capsula) renderAgentProgress(result.capsula);
+      if(response.ok && result.ok){ if(result.capsula) renderAgentProgress(result.capsula); if(result.latest) renderLatestCapsule(result.latest); }
     }catch(_error){ /* Se conserva el último hito visible; el polling reintentará. */ }
   }
   function splitCapsule(summary){

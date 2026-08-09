@@ -59,12 +59,14 @@ test("the Coach exposes learner, application, balance, schedule and honest verif
   assert.match(html,/Tres capacidades/); assert.match(html,/Tecnología → Creatividad → Negocio/);
   assert.match(html,/id="student-select"/); assert.match(html,/id="application"/); assert.match(html,/id="balance-grid"/); assert.match(html,/id="schedule"/);
   assert.match(html,/id="launch-next-capsule"/); assert.match(html,/Encargar a Smith/); assert.match(html,/Adelantar y registrar en Yokup/);
+  assert.match(html,/id="latest-capsule-title"/); assert.match(html,/id="latest-capsule-type"/); assert.match(html,/id="latest-capsule-time"/);
   assert.match(html,/id="agent-progress"/); assert.match(html,/id="agent-progress-steps"/); assert.match(html,/Smith · Grok/);
   assert.match(html,/Smith rastrea YouTube, importa la fuente y condensa el conocimiento en Pixeria/);
   assert.match(html,/Solo las verificadas por Yokup suman en Highscore/); assert.match(html,/no es una acreditación académica/);
   assert.match(css,/@media\(max-width:720px\)/); assert.match(js,/admira-academy-coach-v1/); assert.match(js,/\/api\/coach-log/); assert.match(js,/\/api\/coach-launch/);
   assert.match(js,/saveLaunch/); assert.match(js,/C\.nextCapsule/); assert.match(js,/launchNextCapsule/);
   assert.match(js,/\/api\/coach-progress/); assert.match(js,/pollAgentProgress/); assert.match(js,/setInterval\(pollAgentProgress,2000\)/);
+  assert.match(js,/renderLatestCapsule/); assert.match(js,/result\.latest/); assert.match(js,/finalizada/); assert.match(js,/stock\.html\?highlight=/);
   assert.match(js,/requestedAt:new Date\(requestedAt\)\.toISOString\(\)/); assert.match(js,/nextLaunchAt:new Date\(requestedAt\+C\.HOUR\)/); assert.match(js,/button\.disabled=launching \|\| left>0/);
   assert.match(css,/\.agent-progress/); assert.match(css,/\.agent-progress li\.current/);
 });
@@ -75,11 +77,11 @@ test("the progress proxy only accepts canonical hourly slots and never caches te
   assert.equal(invalid.status,400);
   globalThis.fetch=async url=>{
     assert.equal(String(url),"https://api.yokup.com/academy/capsula/smith/progress?hourStart=1786276800000");
-    return new Response(JSON.stringify({ok:true,capsula:{hour_start:1786276800000,smith:{status:"running",stage:"transcribing",progress:55}}}),{status:200,headers:{"Content-Type":"application/json"}});
+    return new Response(JSON.stringify({ok:true,capsula:{hour_start:1786276800000,smith:{status:"running",stage:"transcribing",progress:55}},latest:{title:"Última cápsula",tema:"negocio",smith:{status:"verified",updated_at:1786277900000,capsule_id:"capsule-1"}}}),{status:200,headers:{"Content-Type":"application/json"}});
   };
   try{
     const response=await proxy.onRequestGet({request:new Request("https://admira.academy/api/coach-progress?hourStart=1786276800000")});
-    assert.equal(response.status,200); assert.equal((await response.json()).capsula.smith.stage,"transcribing"); assert.equal(response.headers.get("Cache-Control"),"no-store");
+    const body=await response.json(); assert.equal(response.status,200); assert.equal(body.capsula.smith.stage,"transcribing"); assert.equal(body.latest.tema,"negocio"); assert.equal(response.headers.get("Cache-Control"),"no-store");
   }finally{ globalThis.fetch=realFetch; }
 });
 
