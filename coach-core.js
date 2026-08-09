@@ -54,11 +54,15 @@
   }
   function slotAt(value){ return epochSlot(value); }
   function slotLabel(value){ const date=validDate(value); return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}`; }
-  function nextBoundary(value){ const date=validDate(value); date.setMinutes(60,0,0); return date; }
+  function nextBoundary(value){ return new Date((epochSlot(value)+1)*HOUR); }
   function countdown(value){
     const date=validDate(value), left=Math.max(0,nextBoundary(date).getTime()-date.getTime());
     const minutes=Math.floor(left/60000), seconds=Math.floor((left%60000)/1000);
     return {ms:left,label:`${pad(minutes)}:${pad(seconds)}`};
+  }
+  function nextCapsule(value){
+    const scheduledAt=nextBoundary(value), lesson=lessonAt(scheduledAt);
+    return {...lesson,slot:slotAt(scheduledAt),slotLabel:slotLabel(scheduledAt),scheduledAt};
   }
   function schedule(value,count=3){
     const start=validDate(value); start.setMinutes(0,0,0);
@@ -77,5 +81,5 @@
     return {counts,total,spread,balanced:total>=3 && spread<=1,label:total===0 ? "Aún sin medir" : spread<=1 ? "Equilibrio activo" : "Dimensión por reforzar"};
   }
 
-  return {HOUR,ANCHOR,DIMENSIONS,epochSlot,dimensionAt,lessonAt,slotAt,slotLabel,nextBoundary,countdown,schedule,completionId,balance};
+  return {HOUR,ANCHOR,DIMENSIONS,epochSlot,dimensionAt,lessonAt,slotAt,slotLabel,nextBoundary,countdown,nextCapsule,schedule,completionId,balance};
 });

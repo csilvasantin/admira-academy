@@ -2,7 +2,7 @@
   "use strict";
   const A=window.AcademyAdvisorCore, C=window.AcademyCoachCore;
   if(!A || !C) throw new Error("El núcleo del Coach no está disponible");
-  const STORAGE_KEY="admira-academy-coach-v1", LOG_ENDPOINT="/api/coach-log";
+  const STORAGE_KEY="admira-academy-coach-v1", LOG_ENDPOINT="/api/coach-log", LAUNCH_ENDPOINT="/api/coach-launch";
   const $=(selector,root=document)=>root.querySelector(selector);
   const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
   const params=new URLSearchParams(location.search);
@@ -12,9 +12,9 @@
   function load(){
     try{
       const parsed=JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      if(parsed && parsed.records) return {version:1,records:{silicio:parsed.records.silicio || {},carbono:parsed.records.carbono || {}}};
+      if(parsed && parsed.records) return {version:1,records:{silicio:parsed.records.silicio || {},carbono:parsed.records.carbono || {}},launches:{silicio:parsed.launches?.silicio || {},carbono:parsed.launches?.carbono || {}}};
     }catch(_error){}
-    return {version:1,records:{silicio:{},carbono:{}}};
+    return {version:1,records:{silicio:{},carbono:{}},launches:{silicio:{},carbono:{}}};
   }
   function save(state){ localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); }
   function record(state){
@@ -25,6 +25,17 @@
   }
   function selectedCompletions(state=load()){ return record(state).completions; }
   function current(){ const now=new Date(), lesson=C.lessonAt(now); return {now,lesson,slot:C.slotAt(now),id:C.completionId(audience,agentId,now,lesson.id)}; }
+  function selectedLaunch(state=load()){ return state.launches?.[audience]?.[agentId] || null; }
+  function saveLaunch(launch){ const state=load(); state.launches[audience] ||= {}; state.launches[audience][agentId]=launch; save(state); }
+  function active(){
+    const hourly=current(), launch=selectedLaunch();
+    if(!launch || !Number.isInteger(Number(launch.targetSlotId))) return hourly;
+    const targetSlot=Number(launch.targetSlotId);
+    if(targetSlot<hourly.slot || targetSlot>hourly.slot+1) return hourly;
+    const now=new Date(targetSlot*C.HOUR), lesson=C.lessonAt(now);
+    if(lesson.id!==launch.lessonId || lesson.dimension!==launch.dimension) return hourly;
+    return {now,lesson,slot:targetSlot,id:C.completionId(audience,agentId,now,lesson.id),manual:true,launch};
+  }
   function syncUrl(){ const next=new URL(location.href); next.searchParams.set("id",agentId); next.searchParams.set("audiencia",audience); history.replaceState(null,"",next); }
   function status(message,type="info"){
     const node=$("#sync-status"); node.textContent=message; node.dataset.type=type; node.hidden=false;
@@ -50,12 +61,12 @@
     $$('[data-retry]').forEach(button=>button.addEventListener("click",()=>{ const pending=selectedCompletions().find(item=>item.id===button.dataset.retry); if(pending) syncCompletion(pending); }));
   }
   function renderLesson(){
-    const snapshot=current(), completions=selectedCompletions(), existing=completions.find(item=>item.id===snapshot.id);
+    const snapshot=active(), completions=selectedCompletions(), existing=completions.find(item=>item.id===snapshot.id);
     visibleSlot=snapshot.slot;
     document.documentElement.style.setProperty("--lesson-tone",snapshot.lesson.tone);
     $("#dimension-number").textContent=snapshot.lesson.number; $("#dimension-name").textContent=snapshot.lesson.dimensionLabel;
     $("#lesson-title").textContent=snapshot.lesson.title; $("#lesson-principle").textContent=snapshot.lesson.principle; $("#lesson-practice").textContent=snapshot.lesson.practice;
-    $("#dimension-promise").textContent=snapshot.lesson.promise; $("#slot-label").textContent=`Franja ${C.slotLabel(snapshot.now).slice(11)}:00–${String((snapshot.now.getHours()+1)%24).padStart(2,"0")}:00`;
+    $("#dimension-promise").textContent=snapshot.lesson.promise; $("#slot-label").textContent=`${snapshot.manual ? "Cápsula manual · " : "Franja "}${C.slotLabel(snapshot.now).slice(11)}:00–${String((snapshot.now.getHours()+1)%24).padStart(2,"0")}:00`;
     $("#lesson-id").textContent=snapshot.id;
     const button=$("#complete-lesson"), application=$("#application");
     if(existing?.yokup?.status==="verified"){
@@ -63,7 +74,9 @@
       status(`Registro confirmado en Yokup · ${existing.yokup.registry || existing.yokup.missionId}`,"success");
     }else{
       button.disabled=false; button.textContent=existing ? "Reintentar registro en Yokup" : "Completar y registrar en Yokup"; application.disabled=false; application.value=existing?.application || application.value;
-      if(existing) status(`Pendiente de sincronizar: ${existing.yokup?.error || "vuelve a intentarlo"}`,"error"); else $("#sync-status").hidden=true;
+      if(existing) status(`Pendiente de sincronizar: ${existing.yokup?.error || "vuelve a intentarlo"}`,"error");
+      else if(snapshot.manual) status(`Cápsula manual lanzada y registrada en Yokup · ${snapshot.lesson.dimensionLabel}`,"success");
+      else $("#sync-status").hidden=true;
     }
     renderSchedule(snapshot.now); renderBalance(completions); renderHistory(completions);
   }
@@ -86,19 +99,38 @@
     }
   }
   async function completeLesson(){
-    const application=$("#application").value.replace(/\s+/g," ").trim(), snapshot=current();
+    const application=$("#application").value.replace(/\s+/g," ").trim(), snapshot=active();
     if(snapshot.slot!==visibleSlot){ renderLesson(); status("La hora cambió: ya tienes delante la nueva lección.","info"); return; }
     if(application.length<20){ status("Describe en al menos 20 caracteres cómo aplicarás esta lección.","error"); $("#application").focus(); return; }
-    const agent=A.council(agentId), base={id:snapshot.id,audience,counselor:agent.id,slotId:snapshot.slot,lessonId:snapshot.lesson.id,dimension:snapshot.lesson.dimension,dimensionLabel:snapshot.lesson.dimensionLabel,title:snapshot.lesson.title,at:new Date().toISOString(),application,yokup:{status:"pending"}};
+    const agent=A.council(agentId), base={id:snapshot.id,audience,counselor:agent.id,slotId:snapshot.slot,lessonId:snapshot.lesson.id,dimension:snapshot.lesson.dimension,dimensionLabel:snapshot.lesson.dimensionLabel,title:snapshot.lesson.title,at:new Date().toISOString(),application,launchId:snapshot.launch?.launchId || "",yokup:{status:"pending"}};
     upsertCompletion(base); await syncCompletion(base);
   }
+  async function launchNextCapsule(){
+    const button=$("#launch-next-capsule"); button.disabled=true; status("Lanzando la próxima cápsula y registrándola en Yokup…","info");
+    try{
+      const response=await fetch(LAUNCH_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({audience})});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok || !result.ok) throw new Error(result.error || `Yokup respondió ${response.status}`);
+      const targetAt=new Date(Number(result.targetSlotId)*C.HOUR), derived=C.lessonAt(targetAt);
+      if(!Number.isInteger(Number(result.targetSlotId)) || result.dimension!==derived.dimension || result.lessonId!==derived.id) throw new Error("Yokup devolvió una cápsula incoherente con el ciclo");
+      const capsuleAgent=A.council(result.capsula?.seat).id;
+      if(result.counselor!==capsuleAgent) throw new Error("Yokup devolvió una silla incoherente con la cápsula");
+      agentId=capsuleAgent; syncUrl(); renderSelectors(); saveLaunch({...result,targetSlotId:Number(result.targetSlotId)}); renderLesson();
+      status(`Cápsula ${derived.dimensionLabel} lanzada para ${A.council(agentId).role} · Yokup ${result.reused ? "reutilizó el registro" : "confirmó el registro"}`,"success");
+    }catch(error){ status(`No se pudo lanzar la cápsula: ${String(error.message || error).slice(0,180)}`,"error"); }
+    finally{ button.disabled=false; tick(); }
+  }
   function tick(){
-    const snapshot=current(); $("#countdown").textContent=C.countdown(snapshot.now).label;
-    if(visibleSlot && snapshot.slot!==visibleSlot) renderLesson();
+    const hourly=current(), next=C.nextCapsule(hourly.now), shown=active();
+    $("#countdown").textContent=C.countdown(hourly.now).label; $("#next-dimension").textContent=next.dimensionLabel;
+    const launched=selectedLaunch(), same=Number(launched?.targetSlotId)===next.slot;
+    $("#launch-hint").textContent=same ? "Ya lanzada · abrir de nuevo no duplica" : `Adelantar la cápsula de las ${String(next.scheduledAt.getHours()).padStart(2,"0")}:00`;
+    if(visibleSlot && shown.slot!==visibleSlot) renderLesson();
   }
   $("#student-select").addEventListener("change",event=>{ agentId=A.council(event.target.value).id; syncUrl(); renderSelectors(); renderLesson(); });
   $$('[data-audience]').forEach(button=>button.addEventListener("click",()=>{ audience=A.audience(button.dataset.audience); syncUrl(); renderSelectors(); renderLesson(); }));
   $("#complete-lesson").addEventListener("click",completeLesson);
+  $("#launch-next-capsule").addEventListener("click",launchNextCapsule);
   window.addEventListener("storage",renderLesson);
   syncUrl(); renderSelectors(); renderLesson(); tick(); setInterval(tick,1000);
 })();

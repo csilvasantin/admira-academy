@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 const help = await readFile(new URL("./help/index.html", import.meta.url), "utf8");
 const academy = await readFile(new URL("./index.html", import.meta.url), "utf8");
 const academyCss = await readFile(new URL("./academy.css", import.meta.url), "utf8");
-const platform = await readFile(new URL("./plataforma/index.html", import.meta.url), "utf8");
+const platform = await readFile(new URL("./platform/index.html", import.meta.url), "utf8");
 const deploy = await readFile(new URL("./deploy.sh", import.meta.url), "utf8");
 
 test("Academy and Platform expose compact navigation to Help", () => {
@@ -14,7 +14,7 @@ test("Academy and Platform expose compact navigation to Help", () => {
   assert.match(academy, /href="\/help\/">Entender Academy<\/a>/);
   assert.match(platform, /href="\/help\/">Ayuda<\/a>/);
   assert.match(help, /href="\/"[^>]*>Academia<\/a>/);
-  assert.match(help, /href="\/plataforma\/">Plataforma<\/a>/);
+  assert.match(help, /href="\/platform\/">Platform<\/a>/);
 });
 
 test("the public explanation states purpose without promising unlimited autonomy", () => {

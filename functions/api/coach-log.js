@@ -32,7 +32,9 @@ export async function onRequestPost({request,env}){
   if(!AUDIENCES.has(audience) || !COUNSELORS.has(counselor)) return json({ok:false,error:"Agente o audiencia no válidos"},400);
   if(!Number.isInteger(slotId)) return json({ok:false,error:"Franja no válida"},400);
   const currentSlot=Math.floor(Date.now()/HOUR);
-  if(slotId>currentSlot || slotId<currentSlot-24) return json({ok:false,error:"La franja está fuera de la ventana de registro de 24 horas"},409);
+  // Se admite como máximo la franja siguiente; Yokup sólo la acepta si existe
+  // un lanzamiento manual autoritativo para ese agente y esa cápsula.
+  if(slotId>currentSlot+1 || slotId<currentSlot-24) return json({ok:false,error:"La franja está fuera de la ventana de registro de 24 horas"},409);
   if(application.length<20 || application.length>900) return json({ok:false,error:"La aplicación debe tener entre 20 y 900 caracteres"},400);
   try{
     const upstream=await fetch(YOKUP_ENDPOINT,{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({audience,counselor,slotId,application})});

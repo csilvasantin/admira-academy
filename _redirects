@@ -1,2 +1,4 @@
 /highlights /highscore/ 301
 /highlights/* /highscore/:splat 301
+/plataforma /platform/ 301
+/plataforma/* /platform/:splat 301

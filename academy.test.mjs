@@ -15,13 +15,14 @@ const publicRoutes = await Promise.all([
   "./help/index.html",
   "./consejeros/index.html",
 ].map(path => readFile(new URL(path, import.meta.url), "utf8")));
-const platform = await readFile(new URL("./plataforma/index.html", import.meta.url), "utf8");
+const platform = await readFile(new URL("./platform/index.html", import.meta.url), "utf8");
 const sandbox = { module:{exports:{}}, URL, Date };
 vm.runInNewContext(coreSource, sandbox);
 const core = sandbox.module.exports;
 
-test("the primary navigation enters the academy", () => {
-  assert.match(html, /class="nav-cta" href="#academia">Entrar en la academia/);
+test("the primary navigation enters the productive Platform", () => {
+  assert.match(html, /class="nav-cta" href="\/platform\/">Entrar en la academia/);
+  assert.match(html, /class="button primary" href="\/platform\/">Entrar en la academia/);
   assert.doesNotMatch(html, /class="nav-cta"[^>]*>Pregunta al avatar/);
 });
 

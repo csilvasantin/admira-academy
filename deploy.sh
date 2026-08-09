@@ -115,10 +115,10 @@ html = html.replace(
 open(index_path, "w", encoding="utf-8").write(html)
 PY
 
-# /plataforma comparte dominio y por tanto el mismo fallback histórico. También
+# /platform comparte dominio y por tanto el mismo fallback histórico. También
 # se publica como documento autosuficiente para que su ruta nunca dependa del
 # MIME que el router asigne a los recursos raíz.
-python3 - "$TMP/plataforma/index.html" "$TMP/platform.css" "$TMP/platform-core.js" "$TMP/platform.js" <<'PY'
+python3 - "$TMP/platform/index.html" "$TMP/platform.css" "$TMP/platform-core.js" "$TMP/platform.js" <<'PY'
 import sys
 index_path, css_path, core_path, js_path = sys.argv[1:]
 html = open(index_path, encoding="utf-8").read()
@@ -219,7 +219,7 @@ html = re.sub(r'(<span class="sig mono">)[^<]*(</span>)', r'\g<1>' + f'{version}
 open(p, "w", encoding="utf-8").write(html)
 PY
 
-VERSION="$VERSION" FIRMA="$FIRMA" python3 - "$TMP/plataforma/index.html" <<'PY'
+VERSION="$VERSION" FIRMA="$FIRMA" python3 - "$TMP/platform/index.html" <<'PY'
 import os, re, sys
 p = sys.argv[1]
 version, firma = os.environ["VERSION"], os.environ["FIRMA"]
@@ -300,7 +300,7 @@ json.dump({
 PY
 
 grep -q "$VERSION" "$TMP/index.html" || { echo "✗ el sello no llegó al index.html" >&2; exit 1; }
-grep -q "$VERSION" "$TMP/plataforma/index.html" || { echo "✗ el sello no llegó a plataforma/index.html" >&2; exit 1; }
+grep -q "$VERSION" "$TMP/platform/index.html" || { echo "✗ el sello no llegó a platform/index.html" >&2; exit 1; }
 grep -q "$VERSION" "$TMP/help/index.html" || { echo "✗ el sello no llegó a help/index.html" >&2; exit 1; }
 grep -q "$VERSION" "$TMP/consejeros/index.html" || { echo "✗ el sello no llegó a consejeros/index.html" >&2; exit 1; }
 grep -q "$VERSION" "$TMP/highscore/index.html" || { echo "✗ el sello no llegó a highscore/index.html" >&2; exit 1; }
