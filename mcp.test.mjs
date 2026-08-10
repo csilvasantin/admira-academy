@@ -38,3 +38,16 @@ test("las trampas que cuestan media hora están escritas en las dos piezas", () 
     assert.match(t, /localStorage/, "el progreso del visitante es de su navegador, no de la casa");
   }
 });
+
+test("la puerta de silicio publica el contrato de mejora sin relleno", () => {
+  assert.equal(mcp.criterio_mejora.contract, "academy-improvement-v1");
+  assert.equal(mcp.criterio_mejora.minimum_score, 4);
+  assert.equal(mcp.criterio_mejora.evidence_max_age_hours, 24);
+  assert.equal(mcp.criterio_mejora.insufficient_action, "investigate");
+  assert.equal(mcp.criterio_mejora.criteria.length, 5);
+  for (const text of [page, llms]) {
+    assert.match(text, /Sin evidencia viva no hay mejora/);
+    assert.match(text, /investigate/);
+    assert.match(text, /menos de 24 h|menos de 24 horas/);
+  }
+});

@@ -32,6 +32,21 @@ ISPs españoles.
 | `GET /council/formacion` | abierta | El acontecimiento: qué silla creció, cuánto y cuándo. |
 | `POST /academy/coach/completion` | token propio | Registrar una lección. Servidor a servidor; la aplicación, entre 20 y 900 caracteres, y la franja como mucho de hace 24 h. |
 
+## Contrato de una mejora
+
+Una propuesta se considera mejora sólo si cumple al menos 4 de 5 señales y la
+primera es obligatoria:
+
+1. **Evidencia viva:** medición o hecho de producción de menos de 24 horas.
+2. **Problema observable:** flujo, pantalla o persona afectada.
+3. **Impacto:** valor, tiempo, calidad o riesgo que cambiará.
+4. **Acción:** intervención concreta; nunca «mejorar cosas».
+5. **Verificación:** medida para comparar antes y después.
+
+Con evidencia caducada o menos de 4/5, responde `investigate`: investiga y mide.
+No rellenes una ventana, no inventes tres opciones y no sumes en Highscore.
+**Sin evidencia viva no hay mejora.**
+
 ## Trampas
 
 - **El material se etiqueta en pixeria con el alias del consejero** (`stevejobs`,

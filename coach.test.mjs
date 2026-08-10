@@ -84,6 +84,14 @@ test("the Coach exposes learner, application, balance, schedule and honest verif
   assert.match(css,/\.agent-progress/); assert.match(css,/\.agent-progress li\.current/);
 });
 
+test("the Coach teaches that improvement requires live evidence instead of filler",()=>{
+  assert.match(html,/Criterio de mejora/); assert.match(html,/Sin evidencia viva no hay mejora/);
+  assert.match(html,/4\/5 mínimo/); assert.match(html,/menos de 24 horas/);
+  for(const label of ["Evidencia viva","Problema observable","Impacto","Acción","Verificación"]) assert.match(html,new RegExp(label));
+  assert.match(html,/investigar/); assert.match(html,/No se abre una ventana de relleno/);
+  assert.match(css,/\.improvement-contract/); assert.match(css,/\.improvement-detail/);
+});
+
 test("the progress proxy only accepts canonical hourly slots and never caches telemetry",async()=>{
   const proxy=await moduleFromSource(progressProxySource), realFetch=globalThis.fetch;
   const invalid=await proxy.onRequestGet({request:new Request("https://admira.academy/api/coach-progress?hourStart=123")});

@@ -97,6 +97,21 @@
     "capsula": "Se elige del Stock de pixeria entre el material etiquetado con el alias de esa silla, con #formacion primero. Si esa silla no tiene material, la cápsula es la lección del Coach de esa hora.",
     "ventana": "Cada cápsula abre una ventana en Yokup (8 puntos) que rota entre los agentes declarados de la Academia, uno cada cuatro horas."
   },
+  "criterio_mejora": {
+    "contract": "academy-improvement-v1",
+    "minimum_score": 4,
+    "evidence_required": true,
+    "evidence_max_age_hours": 24,
+    "criteria": [
+      "evidencia_viva",
+      "problema_observable",
+      "impacto",
+      "accion_concreta",
+      "verificacion"
+    ],
+    "insufficient_action": "investigate",
+    "rule": "Sin evidencia viva no hay mejora. No rellenar ventanas ni puntuar propuestas caducadas o genéricas."
+  },
   "trampas": [
     "El material de una silla se etiqueta en pixeria con el ALIAS del consejero (stevejobs, stevewozniak…) y, si es formación, además con #formacion. Sin la etiqueta no existe para el Consejo.",
     "La traza de puntos del Highscore solo cubre el DÍA EN CURSO: para un informe de ayer no hay recorte.",
